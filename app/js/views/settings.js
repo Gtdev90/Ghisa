@@ -5,6 +5,7 @@ import {
 import { go, refresh } from '../nav.js';
 import { confirm, toast } from '../ui/sheet.js';
 import { stopTimer } from '../ui/timer.js';
+import { watchSupported, watchStatus, watchSendNow } from '../watch.js';
 import {
   $, $$, kg, clock, download, clamp,
 } from '../util.js';
@@ -65,6 +66,11 @@ export default {
       <section class="set-group" data-a="rise"><span class="mono">Movimento</span><div class="set-list">
         ${row('Animazioni', systemPrefersReduced() ? 'Il dispositivo chiede movimento ridotto: scegli "Auto" per rispettarlo' : '"Auto" segue le impostazioni del dispositivo', `<div class="opts" data-opt="motion">${[['auto', 'Auto'], ['full', 'Piene'], ['reduced', 'Ridotte']].map(([v, l]) => `<button data-v="${v}" class="${st.motion === v ? 'on' : ''}">${l}</button>`).join('')}</div>`)}
       </div></section>
+
+      ${watchSupported ? `<section class="set-group" data-a="rise"><span class="mono">Orologio</span><div class="set-list">
+        <div class="set-row"><div><div class="t">Wear OS</div><div class="d" data-wstatus>Controllo…</div></div></div>
+        ${actionRow('watchsync', 'Invia ora all\'orologio', 'Schede, carichi e sessione in corso', 'redo')}
+      </div></section>` : ''}
 
       <section class="set-group" data-a="rise"><span class="mono">Programma · ciclo ${S().cycle}</span><div class="set-list">
         ${test ? actionRow('phase', 'Passa alla Fase 1', 'Anche se il test non è completo', 'arrow') : ''}
@@ -134,6 +140,9 @@ export default {
         } catch {
           // Condivisione annullata dall'utente: nessun messaggio.
         }
+      } else if (act === 'watchsync') {
+        await watchSendNow();
+        toast('Inviato all\'orologio');
       } else if (act === 'import') {
         $('[data-file]', el).click();
       } else if (act === 'reset') {
@@ -144,6 +153,16 @@ export default {
         go('#/benvenuto', { replace: true });
       }
     });
+
+    if (watchSupported) {
+      watchStatus().then((r) => {
+        const d = $('[data-wstatus]', el);
+        if (!d) return;
+        if (r.connected) d.textContent = `Collegato · ${r.nodes.join(', ')}`;
+        else if (r.unavailable) d.textContent = 'Wear OS non disponibile: accoppia l\'orologio con l\'app Wear OS';
+        else d.textContent = 'Nessun orologio collegato';
+      });
+    }
 
     $('[data-file]', el).addEventListener('change', async (e) => {
       const f = e.target.files?.[0];

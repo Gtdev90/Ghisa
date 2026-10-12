@@ -14,7 +14,8 @@
     "android:sync": "node scripts/precache.mjs && npx cap sync android",
     "android:open": "npx cap open android",
     "apk": "node scripts/apk.mjs",
-    "pubblica": "node scripts/pubblica.mjs"
+    "pubblica": "node scripts/pubblica.mjs",
+    "orologio": "node scripts/orologio.mjs"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.1",

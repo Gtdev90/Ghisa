@@ -65,6 +65,34 @@ installarla sui tuoi dispositivi. Per pubblicarla sul Play Store crea una tua ch
 *Build → Generate Signed App Bundle / APK* e togli `signingConfig signingConfigs.debug` da
 `android/app/build.gradle`. Per gli aggiornamenti successivi incrementa `versionCode` e `versionName`.
 
+## App per orologio Wear OS
+
+Modulo **`android/wear/`** (Kotlin + Jetpack Compose): companion per OnePlus Watch 3 e altri Wear OS 4+.
+`npm run apk` produce anche **`dist/GHISA-Watch-1.0.0.apk`** (3,7 MB).
+
+**Cosa fa**
+- Avvio dell'allenamento, segna/annulla serie con carico e ripetizioni sempre visibili, elenco esercizi, riepilogo.
+- Recupero con anello a 60 tacche, vibrazione a 3-2-1 e al via (anche a schermo spento), ±15″ e salta.
+- Test RM: carico con la corona rotante o con ±, tentativo riuscito/mancato; chiusura del test.
+- Frequenza cardiaca live, media/massimo e calorie (Health Services, sessione "Allenamento di forza"):
+  finiscono nel riepilogo e nel diario del telefono.
+- Attività in corso sul quadrante, **Tile** (prossimo allenamento / avanzamento), **complicazione** con il conto alla rovescia.
+
+**Come sincronizza**
+- Telefono → orologio: a ogni cambio l'app web pubblica un'istantanea (`app/js/watch.js`) nella Data Layer.
+- Orologio → telefono: ogni azione è un comando (`/cmd/<id>`) consegnato anche ore dopo; sul telefono lo riceve un
+  servizio nativo (`WatchCommandService`) che lo mette in coda, e l'app lo applica in ordine appena è sveglia.
+  Nel frattempo l'orologio mostra già l'effetto (stato "da sincronizzare"), quindi puoi allenarti con il telefono in tasca.
+
+**Installare l'app sull'orologio** (Wi-Fi, una volta):
+1. Orologio: Impostazioni → Sistema → Informazioni → Versioni → tocca 7 volte *Numero build*.
+2. Impostazioni → Opzioni sviluppatore → attiva *Debug ADB* e *Debug tramite Wi-Fi* (compare IP:porta).
+3. Dal PC: `npm run orologio -- 192.168.1.50:5555` (con il tuo IP:porta). La prima volta aggiungi
+   `--pair 192.168.1.50:41234 123456` usando i dati di "Associa nuovo dispositivo".
+
+Requisito sul telefono: orologio accoppiato tramite l'app **Wear OS** (Google Play Services espone la Data Layer solo così).
+Dopo ogni nuova APK telefono/orologio la parte web si aggiorna da sola con `npm run pubblica`.
+
 ## Struttura
 
 ```

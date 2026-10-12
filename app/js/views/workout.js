@@ -407,6 +407,28 @@ export default {
       clockEl.textContent = a ? elapsed(Date.now() - a.startedAt) : '';
     }, 1000);
 
-    return () => clearInterval(tick);
+    // Serie e chiusura arrivate dall'orologio mentre la schermata è aperta.
+    const onRemote = (ev) => {
+      for (const c of ev.detail) {
+        if (c.type === 'finish' || c.type === 'discard') {
+          const h = S().history[0];
+          go(c.type === 'finish' && h ? `#/riepilogo/${h.id}` : '#/', { replace: true });
+          return;
+        }
+        if ((c.type === 'set' || c.type === 'unset') && EX[c.ex]?.scheda === sid && cardOf(c.ex)) rerenderCard(EX[c.ex]);
+      }
+      if (act(sid) && $('[data-act="start"]', el)) {
+        const dock = $('[data-dock]', el);
+        dock.innerHTML = dockHTML(act(sid));
+        bindHold();
+      }
+      paintProgress();
+    };
+    window.addEventListener('ghisa:remote', onRemote);
+
+    return () => {
+      clearInterval(tick);
+      window.removeEventListener('ghisa:remote', onRemote);
+    };
   },
 };

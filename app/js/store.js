@@ -28,6 +28,7 @@ const defaults = () => ({
   timer: null, // recupero in corso { endAt, dur, label, scheda }
   history: [], // sessioni chiuse, dalla più recente
   archive: [], // cicli di test precedenti { closedAt, cycle, rm: { exId: kg } }
+  acked: [], // ultimi id dei comandi dell'orologio già registrati (l'orologio li usa come conferma)
 });
 
 function load() {
@@ -128,24 +129,26 @@ function recompute(r) {
   r.kg = best;
 }
 
-function openTest(s, sid) {
+function openTest(s, sid, startedAt) {
   if (s.active?.type === 'test' && s.active.scheda === sid) return;
   if (s.active) closeInto(s);
-  s.active = { id: uid(), type: 'test', scheda: sid, startedAt: Date.now(), tested: {} };
+  s.active = { id: uid(), type: 'test', scheda: sid, startedAt: startedAt || Date.now(), tested: {} };
 }
 
 /** Registra un tentativo; ritorna true se è un nuovo RM. */
+function attemptInto(s, exId, kgv, ok, t = Date.now(), startedAt) {
+  const before = s.rm[exId]?.kg ?? null;
+  const r = (s.rm[exId] ||= { kg: null, attempts: [] });
+  r.attempts.push({ kg: kgv, ok, t });
+  recompute(r);
+  if (r.kg !== before) r.date = t;
+  openTest(s, EX[exId].scheda, startedAt);
+  s.active.tested[exId] = (s.active.tested[exId] || 0) + 1;
+  return ok && (before == null || kgv > before);
+}
+
 export function logAttempt(exId, kgv, ok) {
-  return update((s) => {
-    const before = s.rm[exId]?.kg ?? null;
-    const r = (s.rm[exId] ||= { kg: null, attempts: [] });
-    r.attempts.push({ kg: kgv, ok, t: Date.now() });
-    recompute(r);
-    if (r.kg !== before) r.date = Date.now();
-    openTest(s, EX[exId].scheda);
-    s.active.tested[exId] = (s.active.tested[exId] || 0) + 1;
-    return ok && (before == null || kgv > before);
-  });
+  return update((s) => attemptInto(s, exId, kgv, ok));
 }
 
 export function removeAttempt(exId, t) {
@@ -198,7 +201,7 @@ export function saveMaxTest(exId, mt) {
 
 // ---------- Sessioni ----------
 
-function closeInto(s) {
+function closeInto(s, opts = {}) {
   const a = s.active;
   if (!a) return null;
   s.active = null;
@@ -217,7 +220,8 @@ function closeInto(s) {
       scheda: a.scheda,
       workout: sc.workout,
       startedAt: a.startedAt,
-      endedAt: Date.now(),
+      endedAt: opts.endedAt || Date.now(),
+      ...(opts.hr ? { hr: opts.hr } : {}),
       items,
       sets: all.length,
       reps: all.reduce((x, y) => x + y.reps, 0),
@@ -238,7 +242,7 @@ function closeInto(s) {
       type: 'test',
       scheda: a.scheda,
       startedAt: a.startedAt,
-      endedAt: Date.now(),
+      endedAt: opts.endedAt || Date.now(),
       items,
       sets: items.reduce((x, i) => x + i.attempts, 0),
       found: items.filter((i) => i.rm != null).length,
@@ -248,10 +252,57 @@ function closeInto(s) {
   return entry.id;
 }
 
+function openWorkout(s, sid, startedAt) {
+  if (s.active?.type === 'workout' && s.active.scheda === sid) return;
+  if (s.active) closeInto(s);
+  s.active = { id: uid(), type: 'workout', scheda: sid, startedAt: startedAt || Date.now(), sets: {}, loads: {} };
+}
+
 export function startWorkout(sid) {
   update((s) => {
     if (s.active) closeInto(s);
-    s.active = { id: uid(), type: 'workout', scheda: sid, startedAt: Date.now(), sets: {}, loads: {} };
+    openWorkout(s, sid);
+  });
+}
+
+/**
+ * Applica un comando arrivato dall'orologio. Idempotente (l'id viene ricordato) e ripetibile in ordine
+ * temporale, così le serie segnate con il telefono in tasca vengono registrate al risveglio dell'app.
+ * Ritorna il comando se è stato applicato, altrimenti null.
+ */
+export function remoteApply(c) {
+  return update((s) => {
+    if (!c?.id || s.acked.includes(c.id)) return null;
+    s.acked = [...s.acked, c.id].slice(-60);
+    switch (c.type) {
+      case 'start':
+        openWorkout(s, c.scheda, c.startedAt || c.t);
+        break;
+      case 'set': {
+        if (!EX[c.ex]) break;
+        openWorkout(s, c.scheda, c.startedAt || c.t);
+        (s.active.sets[c.ex] ||= [])[c.i] = { reps: c.reps, kg: c.kg, t: c.t };
+        break;
+      }
+      case 'unset':
+        if (s.active?.type === 'workout' && s.active.sets[c.ex]) s.active.sets[c.ex][c.i] = null;
+        break;
+      case 'finish':
+        if (s.active?.type === 'workout') closeInto(s, { endedAt: c.endedAt || c.t, hr: c.hr });
+        break;
+      case 'discard':
+        s.active = null;
+        s.timer = null;
+        break;
+      case 'attempt':
+        if (EX[c.ex]) attemptInto(s, c.ex, c.kg, !!c.ok, c.t, c.startedAt || c.t);
+        break;
+      case 'closeTest':
+        if (s.active?.type === 'test') closeInto(s);
+        break;
+      default:
+    }
+    return c;
   });
 }
 

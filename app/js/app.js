@@ -6,6 +6,7 @@ import { S, subscribe } from './store.js';
 import { initNav, go, back, currentPath } from './nav.js';
 import { unlockAudio, keepAwake, setVibrate } from './util.js';
 import { resumeTimer } from './ui/timer.js';
+import { initWatch } from './watch.js';
 import { toast } from './ui/sheet.js';
 
 import onboarding from './views/onboarding.js';
@@ -235,6 +236,7 @@ async function boot() {
   route();
   resumeTimer();
   registerSW();
+  initWatch();
 }
 
 boot();

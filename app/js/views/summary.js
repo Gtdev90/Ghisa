@@ -38,6 +38,8 @@ export default {
             <span class="mono">kg${delta != null ? ` · <span class="delta ${delta < 0 ? 'neg' : ''}">${delta >= 0 ? '+' : ''}${delta}% sulla volta scorsa</span>` : ''}</span></div>
           <div><span class="mono">Serie</span><b class="num" data-count="${h.sets}">0</b><span class="mono">su ${s.totalSets}</span></div>
           <div><span class="mono">Ripetizioni</span><b class="num" data-count="${h.reps}">0</b><span class="mono">totali</span></div>
+          ${h.hr ? `<div><span class="mono">Cuore · medio</span><b class="num" data-count="${h.hr.avg}">0</b><span class="mono">bpm · max ${h.hr.max}</span></div>
+          <div><span class="mono">Calorie</span><b class="num" data-count="${h.hr.kcal || 0}">0</b><span class="mono">kcal · da orologio</span></div>` : ''}
         </div>
         <ol class="sum-list">
           ${h.items.map((i) => `<li data-a="rise"><span class="nm">${esc(i.name)}</span><span class="sx">${setsLine(i.sets)}</span></li>`).join('')}

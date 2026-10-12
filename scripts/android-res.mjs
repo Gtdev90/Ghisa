@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { svg, renderPng, cleanup, FLOOR } from './lib/render.mjs';
 
 const RES = fileURLToPath(new URL('../android/app/src/main/res/', import.meta.url));
+const WEAR = fileURLToPath(new URL('../android/wear/src/main/res/', import.meta.url));
 if (!existsSync(RES)) throw new Error('Manca il progetto Android: esegui prima "npx cap add android"');
 
 const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
@@ -19,6 +20,13 @@ for (const [d, k] of Object.entries(DENSITIES)) {
   renderPng(svg({ scale: 0.72, bg: 'none' }), 108 * k, join(dir, 'ic_launcher_foreground.png'), { transparent: true });
   renderPng(svg({ scale: 0.72, bg: 'none', mono: true }), 108 * k, join(dir, 'ic_launcher_monochrome.png'), { transparent: true });
   console.log('mipmap', d);
+}
+// Icone launcher dell'app orologio (tonde): stesso marchio.
+for (const [d, k] of Object.entries(DENSITIES)) {
+  const dir = join(WEAR, `mipmap-${d}`);
+  mkdirSync(dir, { recursive: true });
+  renderPng(svg({ scale: 0.8, bg: 'round' }), 48 * k, join(dir, 'ic_launcher.png'), { transparent: true });
+  renderPng(svg({ scale: 0.8, bg: 'round' }), 48 * k, join(dir, 'ic_launcher_round.png'), { transparent: true });
 }
 cleanup();
 

@@ -14,5 +14,9 @@
       "initialViewportFitValueHint": "cover",
       "style": "DARK"
     }
+  },
+  "server": {
+    "url": "https://gtdev90.github.io/Ghisa/",
+    "cleartext": false
   }
 }

@@ -1,6 +1,6 @@
 // Service worker di GHISA: app shell in cache, funziona interamente offline.
 // VERSION e ASSETS sono rigenerati da `npm run precache` a ogni modifica dei file.
-const VERSION = '1f2b6c4baf';
+const VERSION = 'c33fd5ea33';
 const ASSETS = [
   './css/app.css',
   './fonts/barlow-400.woff2',
@@ -38,6 +38,7 @@ const ASSETS = [
   './js/views/test.js',
   './js/views/unlock.js',
   './js/views/workout.js',
+  './js/watch.js',
   './manifest.webmanifest',
   './vendor/capacitor.js',
   './vendor/gsap/CustomBounce.min.js',

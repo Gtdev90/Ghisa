@@ -17,7 +17,7 @@ function entry(x) {
   const d = new Date(x.endedAt);
   const title = x.type === 'workout' ? `Workout ${x.workout}` : `Test ${x.scheda}`;
   const sub = x.type === 'workout'
-    ? `${minutes(x.endedAt - x.startedAt)} min · ${x.sets} serie · ${int(x.volume)} kg`
+    ? `${minutes(x.endedAt - x.startedAt)} min · ${x.sets} serie · ${int(x.volume)} kg${x.hr ? ` · ♥ ${x.hr.avg}` : ''}`
     : `${minutes(x.endedAt - x.startedAt)} min · ${x.found} RM · ${x.sets} tentativi`;
   const rows = x.type === 'workout'
     ? x.items.map((i) => `<li><span class="nm">${esc(i.name)}</span><span class="sx">${setsLine(i.sets)}</span></li>`).join('')

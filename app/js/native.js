@@ -10,3 +10,7 @@ export const Haptics = plugin('Haptics');
 export const KeepAwake = plugin('KeepAwake');
 export const Filesystem = plugin('Filesystem');
 export const Share = plugin('Share');
+
+// Orologio Wear OS e ciclo di vita dell'app: presenti solo nell'APK con il plugin "Watch".
+export const Watch = isNative && cx.Capacitor.isPluginAvailable?.('Watch') ? cx.registerPlugin('Watch') : null;
+export const AppPlugin = isNative ? cx.registerPlugin('App') : null;

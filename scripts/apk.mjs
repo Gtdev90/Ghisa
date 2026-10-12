@@ -46,4 +46,9 @@ const src = join(ANDROID, 'app', 'build', 'outputs', 'apk', 'release', 'app-rele
 mkdirSync(join(ROOT, 'dist'), { recursive: true });
 const out = join(ROOT, 'dist', `GHISA-${version}.apk`);
 copyFileSync(src, out);
-console.log(`\nAPK pronto: ${out}`);
+
+// Lo stesso Gradle costruisce anche l'app per l'orologio Wear OS (modulo :wear).
+const wearSrc = join(ANDROID, 'wear', 'build', 'outputs', 'apk', 'release', 'wear-release.apk');
+const wearOut = join(ROOT, 'dist', `GHISA-Watch-${version}.apk`);
+copyFileSync(wearSrc, wearOut);
+console.log(`\nAPK telefono: ${out}\nAPK orologio: ${wearOut}`);

@@ -24,6 +24,19 @@
 
         </activity>
 
+        <!-- Comandi dall'orologio Wear OS (Data Layer), anche con l'app chiusa -->
+        <service
+            android:name=".WatchCommandService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/cmd/"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
