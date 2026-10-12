@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "GHISA — test e allenamento",
+  "short_name": "GHISA",
+  "description": "Test dei massimali e Fase 1 per le schede A, B, C, D. Carichi calcolati sui tuoi numeri.",
+  "lang": "it",
+  "dir": "ltr",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b0a",
+  "theme_color": "#0b0b0a",
+  "categories": ["health", "fitness", "sports"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Massimali", "url": "./#/massimali", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Diario", "url": "./#/diario", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
