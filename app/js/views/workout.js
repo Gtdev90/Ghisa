@@ -4,7 +4,7 @@ import {
 import { KIND, schedaById, EX } from '../data.js';
 import {
   S, rmOf, autoLoad, todayLoad, estMinutes, lastSetsOf, startWorkout, finishSession, discardSession,
-  doSet, undoSet, setTodayLoad, setOverride,
+  doSet, undoSet, setTodayLoad, setOverride, currentSetsCount, totalSetsOf, targetRpe,
 } from '../store.js';
 import { go, back } from '../nav.js';
 import { barbellSVG, weightPicker } from '../ui/gear.js';
@@ -12,7 +12,7 @@ import { sheet, confirm, toast } from '../ui/sheet.js';
 import { startRest, stopTimer } from '../ui/timer.js';
 import { holdButton } from '../ui/hold.js';
 import {
-  $, $$, esc, kg, pad, elapsed, buzz,
+  $, $$, esc, kg, int, pad, elapsed, buzz, roundTo,
 } from '../util.js';
 
 const act = (sid) => {
@@ -22,6 +22,10 @@ const act = (sid) => {
 
 function tagFor(e) {
   const a = S().active;
+  const isDeload = S().meso?.isDeload;
+  if (isDeload) {
+    return S().meso?.deloadType === 'medium' ? 'scarico medio (-10%)' : 'scarico parziale (@7)';
+  }
   if (a?.loads?.[e.id] != null) return 'solo oggi';
   if (S().overrides[e.id] != null) return 'carico personalizzato';
   if (rmOf(e.id) == null) return 'tocca per impostare';
@@ -37,45 +41,62 @@ function lastLine(e) {
 }
 
 function setBtn(e, i, rec, isNext) {
+  const rpeBadge = rec?.rpe ? `<span class="rpe-tag mono">@${rec.rpe}</span>` : '';
   return `
-    <button class="set ${rec ? 'done' : ''} ${isNext ? 'next' : ''}" data-act="set" data-i="${i}" style="--f:${rec ? 1 : 0}" aria-label="Serie ${i + 1}${rec ? ' fatta' : ''}">
+    <button class="set ${rec ? 'done' : ''} ${isNext ? 'next' : ''}" data-act="set" data-i="${i}" style="--f:${rec ? 1 : 0}" aria-label="Serie ${i + 1}${rec ? ` fatta a ${kg(rec.kg)} kg` : ''}">
       <span class="num">${rec ? rec.reps : e.reps}</span>
       <span class="mono">${rec ? `${kg(rec.kg)} kg` : `serie ${i + 1}`}</span>
+      ${rpeBadge}
     </button>`;
 }
 
 function body(e, a) {
+  const count = currentSetsCount(e);
   const load = todayLoad(e);
   const sets = a?.sets[e.id] || [];
-  const nextI = Array.from({ length: e.sets }, (_, i) => i).find((i) => !sets[i]);
+  const nextI = Array.from({ length: count }, (_, i) => i).find((i) => !sets[i]);
   const bar = S().settings.bar;
+  const partner = e.jsPartner ? EX[e.jsPartner] : null;
   return `
     <div class="xc-inner">
-      <div class="mono">${esc(e.group)} · ${KIND[e.kind].label}</div>
+      <div class="xc-meta-row mono">
+        <span>${esc(e.group)} · ${KIND[e.kind].label}</span>
+        <span class="meta-pills">
+          <span class="pill-tut" title="Cadenza: Eccentrica·Fermo·Concentrica·Fermo">TUT ${e.tut || '2.0.1.0'}</span>
+          ${e.js ? `<span class="pill-js" title="Jump Set alternato">${e.js}</span>` : ''}
+        </span>
+      </div>
       <div class="xc-load" style="margin-top:12px">
-        <div class="xc-sr"><span>${e.sets}</span><i>×</i><span>${e.reps}</span></div>
+        <div class="xc-sr"><span>${count}</span><i>×</i><span>${e.reps}</span></div>
         <button class="xc-kg ${load == null ? 'empty' : ''}" data-act="load" aria-label="Cambia carico">
           <span class="num">${load != null ? kg(load) : '—'}<small>kg</small></span>
           <span class="mono">${tagFor(e)}</span>
         </button>
       </div>
       ${e.kind === 'barbell' && load != null ? (() => { const b = barbellSVG(load, bar); return `<div class="bb">${b.svg}<div class="bb-label mono">${b.label}</div></div>`; })() : ''}
-      <div class="sets">${Array.from({ length: e.sets }, (_, i) => setBtn(e, i, sets[i], i === nextI)).join('')}</div>
+      <div class="sets">${Array.from({ length: count }, (_, i) => setBtn(e, i, sets[i], i === nextI)).join('')}</div>
+      ${partner ? `
+        <div class="xc-js-link">
+          <button class="js-jump-btn mono" data-act="jump-partner" data-partner="${partner.id}">
+            <svg class="ico"><use href="#i-refresh"/></svg> Alterna Jump Set con <b>${esc(partner.name)}</b>
+          </button>
+        </div>` : ''}
       ${lastLine(e)}
     </div>`;
 }
 
 function card(e, a) {
+  const count = currentSetsCount(e);
   const sets = a?.sets[e.id] || [];
   const doneN = sets.filter(Boolean).length;
-  const complete = doneN >= e.sets;
+  const complete = doneN >= count;
   const load = todayLoad(e);
   return `
     <article class="xc ${complete ? 'complete' : ''}" data-ex="${e.id}" data-a="rise">
       <button class="xc-head" data-act="toggle" aria-expanded="false">
         <span class="xc-n mono">${complete ? '✓' : pad(e.n)}</span>
-        <span class="xc-name">${esc(e.name)}<small>${e.sets}×${e.reps} · ${load != null ? `${kg(load)} kg` : 'carico da definire'}</small></span>
-        <span class="xc-dots">${Array.from({ length: e.sets }, (_, i) => `<i class="${sets[i] ? 'on' : ''}"></i>`).join('')}</span>
+        <span class="xc-name">${esc(e.name)}<small>${count}×${e.reps} · ${load != null ? `${kg(load)} kg` : 'carico da definire'}${e.js ? ` · ${e.js}` : ''}</small></span>
+        <span class="xc-dots">${Array.from({ length: count }, (_, i) => `<i class="${sets[i] ? 'on' : ''}"></i>`).join('')}</span>
       </button>
       <div class="xc-body">${body(e, a)}</div>
     </article>`;
@@ -89,24 +110,27 @@ export default {
   render(sid) {
     const s = schedaById(sid);
     const a = act(sid);
+    const totalSets = totalSetsOf(sid);
     const done = a ? Object.values(a.sets).flat().filter(Boolean).length : 0;
     const missing = s.exercises.filter((e) => todayLoad(e) == null);
+    const isDeload = S().meso?.isDeload;
+    const week = S().meso?.week ?? 1;
     return `
       <header class="bar">
         <button class="icon-btn" data-back="#/" aria-label="Indietro"><svg class="ico"><use href="#i-back"/></svg></button>
-        <span class="bar-title mono">Fase 1 · Scheda ${sid}</span>
+        <span class="bar-title mono">Fase 1 · Scheda ${sid}${isDeload ? ' (Scarico)' : ` (Sett. ${week})`}</span>
         <span class="clock bar-right" data-clock>${a ? elapsed(Date.now() - a.startedAt) : ''}</span>
       </header>
       <div class="head">
         <div class="head-row">
           <span class="head-letter" data-a="pop">${sid}</span>
           <div>
-            <span class="mono" data-a="rise">${s.exercises.length} esercizi · ${s.totalSets} serie · ~${estMinutes(sid)} min</span>
+            <span class="mono" data-a="rise">${s.exercises.length} esercizi · ${totalSets} serie · ~${estMinutes(sid)} min</span>
             <h1 class="h-xl" data-split>Workout ${s.workout}</h1>
           </div>
         </div>
-        <div class="meter knurl" data-a="rise"><i data-meter style="--p:${done / s.totalSets}"></i></div>
-        <div class="meter-label" data-a="rise"><span class="mono" data-done>${done}/${s.totalSets} serie</span><span class="mono">${a ? 'In corso' : 'Pronto'}</span></div>
+        <div class="meter knurl" data-a="rise"><i data-meter style="--p:${done / totalSets}"></i></div>
+        <div class="meter-label" data-a="rise"><span class="mono" data-done>${done}/${totalSets} serie</span><span class="mono">${a ? 'In corso' : 'Pronto'}</span></div>
       </div>
       ${missing.length ? `<div class="xc-warn" data-a="rise">${missing.length === 1 ? '1 esercizio non ha' : `${missing.length} esercizi non hanno`} un RM: tocca il carico per impostarlo.</div>` : ''}
       <div class="cards">${s.exercises.map((e) => card(e, a)).join('')}</div>
@@ -124,7 +148,7 @@ export default {
     const cardOf = (id) => el.querySelector(`.xc[data-ex="${id}"]`);
     const setsOf = (id) => act(sid)?.sets[id] || [];
     const doneCount = () => Object.values(act(sid)?.sets || {}).flat().filter(Boolean).length;
-    const isComplete = (e) => setsOf(e.id).filter(Boolean).length >= e.sets;
+    const isComplete = (e) => setsOf(e.id).filter(Boolean).length >= currentSetsCount(e);
 
     function open(c, animate = true, scroll = true) {
       if (openCard === c) return;
@@ -172,8 +196,12 @@ export default {
 
     function paintProgress() {
       const done = doneCount();
-      gsap.to($('[data-meter]', el), { '--p': done / s.totalSets, duration: 0.8, ease: 'io' });
-      $('[data-done]', el).textContent = `${done}/${s.totalSets} serie`;
+      const total = totalSetsOf(sid);
+      const activeSets = act(sid)?.sets || {};
+      const allSets = Object.values(activeSets).flat().filter(Boolean);
+      const liveVol = allSets.reduce((acc, x) => acc + x.reps * x.kg, 0);
+      gsap.to($('[data-meter]', el), { '--p': done / Math.max(1, total), duration: 0.8, ease: 'io' });
+      $('[data-done]', el).innerHTML = `${done}/${total} serie · <b>${int(liveVol)}</b> <small>kg</small>`;
     }
 
     async function ensureStarted() {
@@ -200,6 +228,19 @@ export default {
       return true;
     }
 
+    function defaultLoadForSet(e, i) {
+      const doneSets = setsOf(e.id);
+      if (i > 0 && doneSets[i - 1]?.kg != null) {
+        const prev = doneSets[i - 1];
+        if (S().settings.autoDrop && (prev.rpe >= 10 || prev.reps < e.reps)) {
+          const drop = e.kind === 'barbell' ? S().settings.round : 1.0;
+          return Math.max(e.kind === 'barbell' ? S().settings.bar : 1, roundTo(prev.kg - drop, S().settings.round));
+        }
+        return prev.kg;
+      }
+      return todayLoad(e);
+    }
+
     async function tapSet(c, i) {
       const e = EX[c.dataset.ex];
       if (!(await ensureStarted())) return;
@@ -208,18 +249,27 @@ export default {
         editSet(e, i, rec);
         return;
       }
-      const load = todayLoad(e);
+      const load = defaultLoadForSet(e, i);
       if (load == null) {
         toast('Prima imposta il carico');
         editLoad(e);
         return;
       }
-      doSet(e.id, i, { reps: e.reps, kg: load, t: Date.now() });
+      const defRpe = targetRpe(e, i);
+      doSet(e.id, i, { reps: e.reps, kg: load, rpe: defRpe, t: Date.now() });
 
       const btn = $$('.set', c)[i];
       btn.classList.add('done');
       btn.classList.remove('next');
       btn.querySelector('.mono').textContent = `${kg(load)} kg`;
+      const rpeTag = btn.querySelector('.rpe-tag');
+      if (rpeTag) rpeTag.textContent = `@${defRpe}`;
+      else {
+        const tag = document.createElement('span');
+        tag.className = 'rpe-tag mono';
+        tag.textContent = `@${defRpe}`;
+        btn.appendChild(tag);
+      }
       gsap.fromTo(btn, { '--f': 0 }, { '--f': 1, duration: 0.5, ease: 'out' });
       punch(btn, 1.16);
       chalkAt(btn, { color: COLORS[sid], n: 16, power: 0.6 });
@@ -229,31 +279,51 @@ export default {
       nextBtn?.classList.add('next');
       paintProgress();
 
+      const count = currentSetsCount(e);
       const doneN = setsOf(e.id).filter(Boolean).length;
-      const following = s.exercises.find((x) => x.n > e.n && !isComplete(x)) || s.exercises.find((x) => !isComplete(x));
-      if (doneN >= e.sets) {
+      const partner = e.jsPartner ? EX[e.jsPartner] : null;
+      const partnerSets = partner ? setsOf(partner.id).filter(Boolean).length : 0;
+      const partnerCount = partner ? currentSetsCount(partner) : 0;
+      const isPartnerPending = partner && partnerSets < partnerCount && partnerSets <= doneN;
+
+      const following = isPartnerPending
+        ? partner
+        : (s.exercises.find((x) => x.n > e.n && !isComplete(x)) || s.exercises.find((x) => !isComplete(x)));
+
+      if (doneN >= count) {
         c.classList.add('complete');
         $('.xc-n', c).textContent = '✓';
         setTimeout(() => {
           if (following) open(cardOf(following.id));
           else close(c);
         }, 650);
+      } else if (isPartnerPending) {
+        setTimeout(() => {
+          open(cardOf(partner.id));
+        }, 650);
       }
-      if (doneCount() >= s.totalSets) {
+      const total = totalSetsOf(sid);
+      if (doneCount() >= total) {
         stopTimer();
         chalkAt($('[data-dock]', el), { color: COLORS[sid], n: 70, power: 1.6 });
         buzz([40, 40, 40, 40, 120]);
         toast('Tutte le serie fatte. Tieni premuto per chiudere l\'allenamento.', { ms: 4200 });
         return;
       }
-      const label = doneN < e.sets
-        ? `Prossima: ${e.name} · serie ${doneN + 1} di ${e.sets}`
-        : `Prossimo: ${following.name} · ${following.sets}×${following.reps}${todayLoad(following) != null ? ` @ ${kg(todayLoad(following))} kg` : ''}`;
+      let label;
+      if (isPartnerPending) {
+        label = `Jump Set: ${partner.name} · serie ${partnerSets + 1} di ${partnerCount}`;
+      } else if (doneN < count) {
+        label = `Prossima: ${e.name} · serie ${doneN + 1} di ${count}`;
+      } else {
+        label = `Prossimo: ${following.name} · ${currentSetsCount(following)}×${following.reps}${todayLoad(following) != null ? ` @ ${kg(todayLoad(following))} kg` : ''}`;
+      }
       startRest(e.oneRM ? restMain : restAcc, { label, scheda: sid });
     }
 
     function editSet(e, i, rec) {
       let reps = rec.reps;
+      let selectedRpe = rec.rpe || targetRpe(e, i);
       let picker;
       sheet({
         accent: sid,
@@ -266,6 +336,18 @@ export default {
           </div>
           <div class="mono" style="text-align:center;margin-top:-8px">ripetizioni fatte</div>
           <div data-wp></div>
+          <div class="rpe-picker">
+            <div class="mono" style="text-align:center;font-size:12px;margin:12px 0 6px">Intensità / RPE (Liparoti)</div>
+            <div class="rpe-row">
+              <button class="rpe-btn ${selectedRpe === 7 ? 'on' : ''}" data-rpe="7"><b>@7</b><small>buffer 3</small></button>
+              <button class="rpe-btn ${selectedRpe === 8 ? 'on' : ''}" data-rpe="8"><b>@8</b><small>buffer 2</small></button>
+              <button class="rpe-btn ${selectedRpe === 9 ? 'on' : ''}" data-rpe="9"><b>@9</b><small>standard</small></button>
+              <button class="rpe-btn ${selectedRpe === 10 ? 'on' : ''}" data-rpe="10"><b>@10</b><small>cedimento</small></button>
+            </div>
+          </div>
+          <div class="set-vol mono" data-vol style="text-align:center;font-size:13px;color:var(--chalk2);margin:8px 0 16px">
+            Volume serie: <b>${reps * rec.kg} kg</b>
+          </div>
           <div class="btn-row">
             <button class="btn btn-ghost" data-x="undo">Annulla serie</button>
             <button class="btn btn-acc" data-x="save">Salva</button>
@@ -273,19 +355,36 @@ export default {
         onMount(panel, closeSheet) {
           picker = weightPicker($('[data-wp]', panel), { kind: e.kind, value: rec.kg, bar: S().settings.bar, showBar: false });
           const out = $('[data-reps]', panel);
+          const volEl = $('[data-vol]', panel);
+          const updateVol = () => {
+            const currentKg = picker ? picker.get() : rec.kg;
+            if (volEl) volEl.innerHTML = `Volume serie: <b>${reps * currentKg} kg</b>`;
+          };
           panel.addEventListener('click', (ev) => {
             const r = ev.target.closest('[data-r]');
             if (r) {
               reps = Math.max(0, Math.min(60, reps + +r.dataset.r));
               out.textContent = reps;
               punch(out, 1.1);
+              updateVol();
+              return;
+            }
+            const rpeBtn = ev.target.closest('[data-rpe]');
+            if (rpeBtn) {
+              selectedRpe = Number(rpeBtn.dataset.rpe);
+              $$('.rpe-btn', panel).forEach((b) => b.classList.toggle('on', b === rpeBtn));
+              buzz(15);
               return;
             }
             const x = ev.target.closest('[data-x]')?.dataset.x;
             if (x === 'undo') {
               undoSet(e.id, i);
             } else if (x === 'save') {
-              doSet(e.id, i, { ...rec, reps, kg: picker.get() });
+              const newKg = picker.get();
+              doSet(e.id, i, { ...rec, reps, kg: newKg, rpe: selectedRpe });
+              if (selectedRpe >= 10 && S().settings.autoDrop) {
+                toast(`RPE 10: drop di carico suggerito per la serie ${i + 2}`, { ms: 2500 });
+              }
             } else return;
             closeSheet();
             const fresh = rerenderCard(e);
@@ -390,6 +489,14 @@ export default {
         case 'start':
           ensureStarted();
           break;
+        case 'jump-partner': {
+          const pid = t.dataset.partner;
+          if (pid) {
+            const pc = cardOf(pid);
+            if (pc) open(pc);
+          }
+          break;
+        }
         default:
       }
     });

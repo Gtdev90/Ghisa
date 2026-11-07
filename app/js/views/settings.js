@@ -1,6 +1,6 @@
 import { gsap, punch, flipText, systemPrefersReduced } from '../anim.js';
 import {
-  S, setSetting, newCycle, resetAll, exportState, importState,
+  S, setSetting, newCycle, resetAll, exportState, importState, setWeek, setDeloadType,
 } from '../store.js';
 import { go, refresh } from '../nav.js';
 import { confirm, toast } from '../ui/sheet.js';
@@ -15,12 +15,13 @@ const STEPPERS = {
   restMain: { min: 30, max: 420, step: 15, fmt: clock },
   restAcc: { min: 15, max: 300, step: 15, fmt: clock },
   restTest: { min: 30, max: 420, step: 15, fmt: clock },
+  mesoWeek: { min: 1, max: 6, step: 1, fmt: (v) => `Settimana ${v}` },
 };
 
 const stepper = (k) => `
   <div class="stepper" data-k="${k}">
     <button data-d="-1" aria-label="Diminuisci"><svg class="ico"><use href="#i-minus"/></svg></button>
-    <output>${STEPPERS[k].fmt(S().settings[k])}</output>
+    <output>${k === 'mesoWeek' ? STEPPERS[k].fmt(S().meso?.week || 1) : STEPPERS[k].fmt(S().settings[k])}</output>
     <button data-d="1" aria-label="Aumenta"><svg class="ico"><use href="#i-plus"/></svg></button>
   </div>`;
 
@@ -49,6 +50,13 @@ export default {
       <section class="set-group" data-a="rise"><span class="mono">Carichi</span><div class="set-list">
         ${row('Bilanciere', 'Peso della barra: dischi per lato e riscaldamento 1RM', stepper('bar'))}
         ${row('Arrotondamento', 'Per i carichi in percentuale (70%, riscaldamento)', `<div class="opts" data-opt="round">${[0.5, 1, 1.25, 2.5].map((v) => `<button data-v="${v}" class="${st.round === v ? 'on' : ''}">${kg(v)}</button>`).join('')}</div>`)}
+      </div></section>
+
+      <section class="set-group" data-a="rise"><span class="mono">Metodologia scientifica (Liparoti)</span><div class="set-list">
+        ${row('Intensità RPE / RIR', 'Traccia la riserva di ripetizioni sulle serie (RPE 9 standard, RPE 10 cedimento)', toggle('trackRpe'))}
+        ${row('Auto-drop carico', 'Suggerisce -2,5 kg se la serie precedente è stata a cedimento', toggle('autoDrop'))}
+        ${row('Modalità di scarico', 'Protocollo applicato quando attivi la Settimana di Scarico', `<div class="opts" data-opt="deloadType">${[['partial', 'Parziale (-1 set, @7)'], ['medium', 'Medio (-10% kg, 50% set)']].map(([v, l]) => `<button data-v="${v}" class="${(S().meso?.deloadType || 'partial') === v ? 'on' : ''}">${l}</button>`).join('')}</div>`)}
+        ${row('Settimana mesociclo', 'Avanza in automatico ogni 4 workout completati', stepper('mesoWeek'))}
       </div></section>
 
       <section class="set-group" data-a="rise"><span class="mono">Recuperi</span><div class="set-list">
@@ -83,7 +91,7 @@ export default {
         ${actionRow('reset', 'Azzera tutto', 'Cancella ogni dato e riparte dal benvenuto', 'trash', true)}
       </div></section>
       <input type="file" accept="application/json,.json" data-file hidden>
-      <p class="colophon mono" data-a="rise">GHISA 1.0 · i dati restano su questo dispositivo</p>`;
+      <p class="colophon mono" data-a="rise">GT Workout 1.0 · i dati restano su questo dispositivo</p>`;
   },
 
   mount(el) {
@@ -95,6 +103,12 @@ export default {
         const box = stepBtn.closest('.stepper');
         const k = box.dataset.k;
         const cfg = STEPPERS[k];
+        if (k === 'mesoWeek') {
+          const v = clamp((S().meso?.week || 1) + +stepBtn.dataset.d, cfg.min, cfg.max);
+          setWeek(v);
+          flipText($('output', box), cfg.fmt(v));
+          return;
+        }
         const v = clamp(S().settings[k] + +stepBtn.dataset.d * cfg.step, cfg.min, cfg.max);
         setSetting(k, v);
         flipText($('output', box), cfg.fmt(v));
@@ -104,6 +118,12 @@ export default {
       if (opt) {
         const group = opt.closest('.opts');
         const k = group.dataset.opt;
+        if (k === 'deloadType') {
+          setDeloadType(opt.dataset.v);
+          $('button', group).forEach((b) => b.classList.toggle('on', b === opt));
+          punch(opt, 1.1);
+          return;
+        }
         setSetting(k, k === 'round' ? +opt.dataset.v : opt.dataset.v);
         $('button', group).forEach((b) => b.classList.toggle('on', b === opt));
         punch(opt, 1.1);
@@ -135,7 +155,7 @@ export default {
       } else if (act === 'export') {
         const d = new Date().toISOString().slice(0, 10);
         try {
-          await download(`ghisa-backup-${d}.json`, exportState());
+          await download(`gt-workout-backup-${d}.json`, exportState());
           toast('Backup esportato');
         } catch {
           // Condivisione annullata dall'utente: nessun messaggio.
@@ -177,7 +197,7 @@ export default {
         toast('Backup importato');
         refresh();
       } catch {
-        toast('File non valido: serve un backup di GHISA');
+        toast('File non valido: serve un backup valido di GT Workout');
       }
     });
   },

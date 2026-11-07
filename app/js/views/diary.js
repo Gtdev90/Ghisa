@@ -1,5 +1,5 @@
 import { gsap, setGlow, reduced, timing } from '../anim.js';
-import { S, deleteHistory } from '../store.js';
+import { S, deleteHistory, statsByMuscleGroup } from '../store.js';
 import { refresh } from '../nav.js';
 import { plateSVG } from '../ui/gear.js';
 import { confirm } from '../ui/sheet.js';
@@ -8,16 +8,21 @@ import {
 } from '../util.js';
 
 function setsLine(sets) {
-  const same = sets.every((x) => x.kg === sets[0].kg);
-  if (same) return `<b>${sets.map((x) => x.reps).join('·')}</b> @ ${kg(sets[0].kg)} kg`;
-  return sets.map((x) => `<b>${x.reps}</b>×${kg(x.kg)}`).join(' · ');
+  const same = sets.every((x) => x.kg === sets[0].kg && x.rpe === sets[0].rpe);
+  if (same) {
+    const rpeText = sets[0].rpe ? ` <small style="color:var(--chalk3)">@${sets[0].rpe}</small>` : '';
+    return `<b>${sets.map((x) => x.reps).join('·')}</b> @ ${kg(sets[0].kg)} kg${rpeText}`;
+  }
+  return sets.map((x) => `<b>${x.reps}</b>×${kg(x.kg)}${x.rpe ? `<small style="color:var(--chalk3)">@${x.rpe}</small>` : ''}`).join(' · ');
 }
 
 function entry(x) {
   const d = new Date(x.endedAt);
   const title = x.type === 'workout' ? `Workout ${x.workout}` : `Test ${x.scheda}`;
+  const rpeSub = x.avgRpe ? ` · @${x.avgRpe}` : '';
+  const deloadBadge = x.isDeload ? ' <span class="mono" style="font-size:10px;color:var(--yellow);border:1px solid rgba(247,197,27,.35);padding:1px 5px;border-radius:4px">SCARICO</span>' : '';
   const sub = x.type === 'workout'
-    ? `${minutes(x.endedAt - x.startedAt)} min · ${x.sets} serie · ${int(x.volume)} kg${x.hr ? ` · ♥ ${x.hr.avg}` : ''}`
+    ? `${minutes(x.endedAt - x.startedAt)} min · ${x.sets} serie · ${int(x.volume)} kg${rpeSub}${x.hr ? ` · ♥ ${x.hr.avg}` : ''}${deloadBadge}`
     : `${minutes(x.endedAt - x.startedAt)} min · ${x.found} RM · ${x.sets} tentativi`;
   const rows = x.type === 'workout'
     ? x.items.map((i) => `<li><span class="nm">${esc(i.name)}</span><span class="sx">${setsLine(i.sets)}</span></li>`).join('')
@@ -46,7 +51,7 @@ export default {
     if (!h.length) {
       return `${head}
         <div class="empty" data-s="${S().phase === 'test' ? 'A' : 'B'}">
-          <div data-a="pop">${plateSVG('Ghisa · pagina bianca · Ghisa · ')}</div>
+          <div data-a="pop">${plateSVG('GT Workout · pagina bianca · GT Workout · ')}</div>
           <h2 class="h-m" data-a="rise">Pagina bianca</h2>
           <p data-a="rise">Ogni test e ogni allenamento chiuso finisce qui, con serie, carichi e volume.</p>
         </div>`;
@@ -65,12 +70,26 @@ export default {
       return sep + entry(x);
     }).join('');
 
+    const stats = statsByMuscleGroup(7);
+    const hasStats = Object.keys(stats).length > 0;
+
     return `${head}
       <div class="kpis" data-a="rise">
         <div class="kpi"><span class="mono">Sessioni</span><b class="num" data-count="${h.length}">0</b></div>
         <div class="kpi"><span class="mono">Volume</span><b class="num">${vol >= 10000 ? `<span data-count="${(vol / 1000).toFixed(1)}">0</span><small>t</small>` : `<span data-count="${vol}">0</span><small>kg</small>`}</b></div>
         <div class="kpi"><span class="mono">7 giorni</span><b class="num" data-count="${week}">0</b></div>
       </div>
+      ${hasStats ? `
+        <div class="groups-volume" data-a="rise" style="margin:16px 0;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px">
+          <div class="section-head" style="margin:0 0 10px"><span class="mono">Serie per distretto (Liparoti)</span><span class="mono">ultimi 7 giorni</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:8px">
+            ${Object.entries(stats).map(([grp, d]) => `
+              <div style="background:var(--s2);padding:8px 6px;border-radius:var(--r1);text-align:center">
+                <span class="mono" style="display:block;font-size:11px;color:var(--chalk3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(grp)}</span>
+                <b class="num" style="font-size:18px;color:var(--chalk)">${d.sets}</b><small class="mono" style="font-size:10px;color:var(--chalk3);display:block">${int(d.volume)} kg</small>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
       ${recent.length ? `
         <div class="chart" data-a="rise">
           <div class="section-head" style="margin:0"><span class="mono">Volume per allenamento</span><span class="mono">ultimi ${recent.length}</span></div>

@@ -121,6 +121,37 @@ function kindOf(name) {
   return 'machine';
 }
 
+// Time Under Tension (Liparoti / Project Bodybuilding):
+// 4 cifre: Eccentrica · Pausa allungamento · Concentrica · Fermo contrazione
+function tutOf(name) {
+  if (/stacco rumeno|hyperextension|panca 60|panca 45|french press/i.test(name)) return '3.0.1.0';
+  if (/leg extension|leg curl|pulley|push down|alzate|abductor/i.test(name)) return '2.0.1.1';
+  if (/sit up|crunch/i.test(name)) return '2.1.1.1';
+  return '2.0.1.0';
+}
+
+// Coppie raccomandate in Jump Set (serie a balzi agonista/antagonista)
+const JS_PAIRS = {
+  A: [
+    ['A-french-press-manubri-su-panca-piana', 'A-curl-manubri-in-piedi', 'JS1'],
+    ['A-push-down-corda-al-cavo-alto', 'A-curl-manubri-su-panca-60', 'JS2'],
+  ],
+  B: [
+    ['B-pulley-machine-triangolo', 'B-spinte-manubri-su-panca-piana', 'JS1'],
+    ['B-alzate-laterali-manubri-in-piedi', 'B-alzate-posteriori-manubri-a-90', 'JS2'],
+  ],
+  C: [
+    ['C-leg-press', 'C-leg-curl', 'JS1'],
+    ['C-curl-manubri-seduto', 'C-french-press-corda-al-cavo-basso', 'JS2'],
+    ['C-curl-manubri-su-panca-45', 'C-push-down-barra-al-cavo-alto', 'JS3'],
+  ],
+  D: [
+    ['D-spinte-in-alto-manubri-seduto', 'D-lat-machine-presa-media', 'JS1'],
+    ['D-alzate-laterali-manubri-seduto', 'D-alzate-laterali-su-panca-45', 'JS2'],
+    ['D-hyperextension', 'D-crunch-in-ginocchio-al-cavo-alto', 'JS3'],
+  ],
+};
+
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ°]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -128,18 +159,27 @@ export const SCHEDE = RAW.map((s) => {
   let n = 0;
   const groups = s.groups.map(([name, list]) => ({
     name,
-    exercises: list.map(([exName, testReps, sets, reps]) => ({
-      id: `${s.id}-${slug(exName)}`,
-      scheda: s.id,
-      group: name,
-      name: exName,
-      testReps,
-      sets,
-      reps,
-      n: ++n,
-      oneRM: testReps === 1,
-      kind: kindOf(exName),
-    })),
+    exercises: list.map(([exName, testReps, sets, reps]) => {
+      const exId = `${s.id}-${slug(exName)}`;
+      const jsInfo = (JS_PAIRS[s.id] || []).find(([a, b]) => a === exId || b === exId);
+      const js = jsInfo ? jsInfo[2] : null;
+      const jsPartner = jsInfo ? (jsInfo[0] === exId ? jsInfo[1] : jsInfo[0]) : null;
+      return {
+        id: exId,
+        scheda: s.id,
+        group: name,
+        name: exName,
+        testReps,
+        sets,
+        reps,
+        n: ++n,
+        oneRM: testReps === 1,
+        kind: kindOf(exName),
+        tut: tutOf(exName),
+        js,
+        jsPartner,
+      };
+    }),
   }));
   const exercises = groups.flatMap((g) => g.exercises);
   return {

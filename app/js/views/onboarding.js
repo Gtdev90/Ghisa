@@ -10,8 +10,8 @@ const SLIDES = [
     s: 'A',
     kicker: '01 · Benvenuto',
     title: 'Prima si misura.<br>Poi si carica.',
-    text: `Quattro schede, ${ALL.length} esercizi, un test per ognuno. I carichi li calcola GHISA sui tuoi numeri: niente pesi a caso.`,
-    art: () => `<div class="art-plates">${SCHEDE.map((s) => `<div class="plate-wrap" data-s="${s.id}">${plateSVG(`Scheda ${s.id} · Workout ${s.workout} · Ghisa · `)}</div>`).join('')}</div>`,
+    text: `Quattro schede, ${ALL.length} esercizi, un test per ognuno. I carichi li calcola GT Workout sui tuoi numeri: niente pesi a caso.`,
+    art: () => `<div class="art-plates">${SCHEDE.map((s) => `<div class="plate-wrap" data-s="${s.id}">${plateSVG(`Scheda ${s.id} · Workout ${s.workout} · GT Workout · `)}</div>`).join('')}</div>`,
   },
   {
     s: 'B',
@@ -36,7 +36,7 @@ export default {
   render() {
     return `
       <div class="onb-top">
-        <div class="wordmark"><span class="marks"><i></i><i></i><i></i><i></i></span>GHISA</div>
+        <div class="wordmark"><span class="marks"><i></i><i></i><i></i><i></i></span>GT WORKOUT</div>
         <button class="link-btn" data-act="skip">Salta</button>
       </div>
       <div class="onb-stage">

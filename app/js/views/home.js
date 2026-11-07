@@ -1,10 +1,11 @@
 import { gsap, Draggable, setGlow, reduced, timing } from '../anim.js';
 import { ALL, EX, SCHEDE } from '../data.js';
 import {
-  S, doneIn, doneTotal, allTested, nextScheda, estMinutes, workoutsDone, rmOf, workLoad,
+  S, doneIn, doneTotal, allTested, nextScheda, estMinutes, workoutsDone, rmOf, workLoad, totalSetsOf, toggleDeload,
 } from '../store.js';
-import { go } from '../nav.js';
+import { go, refresh } from '../nav.js';
 import { plateSVG } from '../ui/gear.js';
+import { toast } from '../ui/sheet.js';
 import { $, $$, esc, kg, int, dayLabel, minutes, clamp } from '../util.js';
 
 const segs = (s) => `<div class="segs">${s.exercises.map((e) => `<i class="${rmOf(e.id) != null ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -13,13 +14,14 @@ function slab(s, sug) {
   const st = S();
   const test = st.phase === 'test';
   const done = doneIn(s.id);
+  const totalSets = totalSetsOf(s.id);
   let badge = '';
   if (st.active?.scheda === s.id) badge = '<span class="badge">In corso</span>';
   else if (s.id === sug) badge = '<span class="badge">Prossima</span>';
   else if (test && done === s.exercises.length) badge = '<span class="badge ghost">Testata</span>';
   return `
     <article class="slab" data-s="${s.id}" aria-label="Scheda ${s.id}">
-      ${plateSVG(`Ghisa · Scheda ${s.id} · Workout ${s.workout} · 20 kg · `)}
+      ${plateSVG(`GT Workout · Scheda ${s.id} · Workout ${s.workout} · 20 kg · `)}
       <div class="slab-top"><span class="mono">Scheda · Workout ${s.workout}</span>${badge}</div>
       <div class="slab-letter">${s.id}</div>
       <ul class="slab-groups">${s.groups.map((g) => `<li>${esc(g.name)}</li>`).join('')}</ul>
@@ -27,7 +29,7 @@ function slab(s, sug) {
         <div><b class="num">${s.exercises.length}</b><span class="mono">esercizi</span></div>
         ${test
           ? `<div><b class="num">${done}/${s.exercises.length}</b><span class="mono">RM rilevati</span></div>`
-          : `<div><b class="num">${s.totalSets}</b><span class="mono">serie</span></div>
+          : `<div><b class="num">${totalSets}</b><span class="mono">serie</span></div>
              <div><b class="num">~${estMinutes(s.id)}</b><span class="mono">minuti</span></div>`}
       </div>
       ${test ? segs(s) : ''}
@@ -105,14 +107,22 @@ export default {
     const sug = nextScheda();
     return `
       <header class="topbar" data-a="rise">
-        <div class="wordmark"><span class="marks"><i></i><i></i><i></i><i></i></span>GHISA</div>
+        <div class="wordmark"><span class="marks"><i></i><i></i><i></i><i></i></span>GT WORKOUT</div>
         <a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg class="ico"><use href="#i-sliders"/></svg></a>
       </header>
       <div class="status mono" data-a="rise">
         ${test
           ? `<i class="pulse"></i><span>Fase test · <b>${doneTotal()}</b>/${ALL.length} RM rilevati</span>`
-          : `<i class="pulse on"></i><span>Fase 1 · <b>${workoutsDone()}</b> allenamenti chiusi</span>`}
+          : `<i class="pulse on"></i><span>Settimana <b>${st.meso?.week ?? 1}</b> di ${st.meso?.totalWeeks ?? 5} · <b style="color:${st.meso?.isDeload ? 'var(--yellow)' : 'var(--chalk)'}">${st.meso?.isDeload ? 'SCARICO' : 'Accumulo'}</b></span>`}
       </div>
+      ${!test ? `
+        <div class="meso-strip mono" data-a="rise">
+          <button class="deload-toggle ${st.meso?.isDeload ? 'on' : ''}" data-act="deload" aria-label="Attiva o disattiva scarico">
+            <svg class="ico"><use href="${st.meso?.isDeload ? '#i-check' : '#i-sliders'}"/></svg>
+            <span>${st.meso?.isDeload ? 'Scarico attivo' : 'Attiva scarico'}</span>
+          </button>
+          <span class="sub">${workoutsDone()} allenamenti chiusi</span>
+        </div>` : ''}
       <div class="deck" data-a="deck"><div class="deck-track">${SCHEDE.map((s) => slab(s, sug)).join('')}</div></div>
       <div class="deck-dots" data-a="rise">${SCHEDE.map((s, i) => `<button class="pdot" data-s="${s.id}" data-i="${i}" aria-label="Scheda ${s.id}"></button>`).join('')}</div>
       <a class="btn cta" data-cta data-a="rise" href="#/">
@@ -217,6 +227,14 @@ export default {
     el.addEventListener('click', (e) => {
       const d = e.target.closest('.pdot');
       if (d) goTo(+d.dataset.i);
+      const deload = e.target.closest('[data-act="deload"]');
+      if (deload) {
+        e.stopPropagation();
+        toggleDeload();
+        const nowDeload = S().meso?.isDeload;
+        toast(nowDeload ? 'Modalità Scarico attivata (carichi e serie ridotti)' : 'Scarico disattivato (lavoro pieno)', { ms: 2500 });
+        refresh();
+      }
     });
 
     const onResize = () => {

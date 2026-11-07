@@ -5,7 +5,7 @@ import * as A from './anim.js';
 import { S, subscribe } from './store.js';
 import { initNav, go, back, currentPath } from './nav.js';
 import { unlockAudio, keepAwake, setVibrate } from './util.js';
-import { resumeTimer } from './ui/timer.js';
+import { resumeTimer, syncTimerPill } from './ui/timer.js';
 import { initWatch } from './watch.js';
 import { toast } from './ui/sheet.js';
 
@@ -87,6 +87,7 @@ function route(force = false) {
   const cleanup = r.view.mount?.(el, ...params) || null;
   cur = { r, el, cleanup, path };
   setTabs(r.tab);
+  syncTimerPill();
 
   tl = swap(old?.el, el, dir);
   tl.add(() => {
@@ -167,6 +168,7 @@ const syncSystem = (s) => {
   setMotion(s.settings.motion);
   setVibrate(s.settings.vibrate);
   keepAwake(!!s.active && s.settings.wake);
+  syncTimerPill();
 };
 subscribe(syncSystem);
 syncSystem(S());
@@ -205,7 +207,7 @@ function registerSW() {
         if (nw.state !== 'installed' || !navigator.serviceWorker.controller) return;
         // Con una sessione aperta non si ricarica da soli: decide l'utente.
         if (S().active) {
-          toast('Nuova versione di GHISA pronta', { action: 'Aggiorna', ms: 15000, onAction: () => nw.postMessage('skip') });
+          toast('Nuova versione di GT Workout pronta', { action: 'Aggiorna', ms: 15000, onAction: () => nw.postMessage('skip') });
         } else {
           nw.postMessage('skip');
         }
@@ -224,7 +226,7 @@ function registerSW() {
   try {
     if (sessionStorage.getItem('ghisa:updated')) {
       sessionStorage.removeItem('ghisa:updated');
-      setTimeout(() => toast('GHISA aggiornata: nuova versione attiva'), 1800);
+      setTimeout(() => toast('GT Workout aggiornata: nuova versione attiva'), 1800);
     }
   } catch { /* storage non disponibile */ }
 }

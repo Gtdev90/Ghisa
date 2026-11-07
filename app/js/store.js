@@ -1,15 +1,23 @@
 // Stato dell'app, persistito in localStorage. Tutto resta sul dispositivo.
 import { ALL, EX, SCHEDE, LETTERS, PHASE1, schedaById } from './data.js';
 import { roundTo, uid } from './util.js';
+import seedData from './seed.js';
 
 const KEY = 'ghisa:v1';
 
-const defaults = () => ({
-  v: 1,
+const emptyDefaults = () => ({
+  v: 2,
   onboarded: false,
   phase: 'test',
   phaseAt: null,
   cycle: 1,
+  meso: {
+    week: 1,
+    totalWeeks: 5,
+    isDeload: false,
+    deloadType: 'partial', // 'partial' (-1 set, -2 RPE) o 'medium' (-10% carico, 50% sets)
+    startedAt: Date.now(),
+  },
   settings: {
     bar: 20,
     round: 2.5,
@@ -20,6 +28,8 @@ const defaults = () => ({
     vibrate: true,
     wake: true,
     motion: 'full', // richiesta esplicita: animazioni sempre piene; 'auto' segue il sistema
+    trackRpe: true, // Registrazione RPE / RIR (Liparoti: RPE 9 standard, RPE 10 cedimento)
+    autoDrop: true, // Suggerimento intelligente drop carico su affaticamento neurale
   },
   rm: {}, // exId -> { kg, manual, manualAt, date, attempts: [{ kg, ok, t }] }
   overrides: {}, // exId -> kg di lavoro Fase 1 scelto a mano
@@ -31,13 +41,59 @@ const defaults = () => ({
   acked: [], // ultimi id dei comandi dell'orologio già registrati (l'orologio li usa come conferma)
 });
 
+const defaults = () => {
+  const base = emptyDefaults();
+  if (seedData && seedData.rm && Object.keys(seedData.rm).length > 0) {
+    const workouts = (seedData.history || []).filter((h) => h.type === 'workout').length;
+    const currentWeek = Math.min(5, Math.floor(workouts / 4) + 1);
+    return {
+      ...base,
+      ...seedData,
+      v: 2,
+      meso: {
+        ...base.meso,
+        week: currentWeek,
+        ...(seedData.meso || {}),
+      },
+      settings: {
+        ...base.settings,
+        ...(seedData.settings || {}),
+        trackRpe: seedData.settings?.trackRpe ?? true,
+        autoDrop: seedData.settings?.autoDrop ?? true,
+      },
+    };
+  }
+  return base;
+};
+
 function load() {
   const d = defaults();
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return d;
     const s = JSON.parse(raw);
-    return { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
+    const workouts = (s.history || []).filter((h) => h.type === 'workout').length;
+    const calculatedWeek = Math.min(5, Math.floor(workouts / 4) + 1);
+    const meso = {
+      week: calculatedWeek,
+      totalWeeks: 5,
+      isDeload: false,
+      deloadType: 'partial',
+      startedAt: Date.now(),
+      ...(s.meso || {}),
+    };
+    return {
+      ...d,
+      ...s,
+      v: 2,
+      meso,
+      settings: {
+        ...d.settings,
+        ...(s.settings || {}),
+        trackRpe: s.settings?.trackRpe ?? true,
+        autoDrop: s.settings?.autoDrop ?? true,
+      },
+    };
   } catch {
     return d;
   }
@@ -111,13 +167,48 @@ export function lastSetsOf(exId) {
 export function estMinutes(sid) {
   const { restMain, restAcc } = state.settings;
   const sec = schedaById(sid).exercises.reduce(
-    (a, e) => a + e.sets * 40 + (e.sets - 1) * (e.oneRM ? restMain : restAcc) + 60,
+    (a, e) => {
+      const sets = currentSetsCount(e);
+      return a + sets * 40 + (sets - 1) * (e.oneRM ? restMain : restAcc) + 60;
+    },
     0,
   );
   return Math.round(sec / 60 / 5) * 5;
 }
 
-export const todayLoad = (ex) => state.active?.loads?.[ex.id] ?? workLoad(ex);
+export function currentSetsCount(ex) {
+  if (state.phase !== 'fase1' || !state.meso?.isDeload) return ex.sets;
+  if (state.meso.deloadType === 'medium') {
+    return Math.max(1, Math.round(ex.sets / 2));
+  }
+  // Scarico parziale: -1 serie per esercizio (Liparoti p. 315)
+  return Math.max(1, ex.sets - 1);
+}
+
+export function totalSetsOf(sid) {
+  return schedaById(sid).exercises.reduce((a, e) => a + currentSetsCount(e), 0);
+}
+
+export function currentTargetLoad(ex) {
+  const base = workLoad(ex);
+  if (base == null) return null;
+  // Scarico medio: carichi abbassati del 10% (Liparoti p. 315)
+  if (state.phase === 'fase1' && state.meso?.isDeload && state.meso.deloadType === 'medium') {
+    return Math.max(state.settings.bar, roundTo(base * 0.90, state.settings.round));
+  }
+  return base;
+}
+
+export const todayLoad = (ex) => state.active?.loads?.[ex.id] ?? currentTargetLoad(ex);
+
+export function targetRpe(ex, setIndex) {
+  // Nello scarico parziale l'RPE cala di 2 punti (lavoro a RPE 7, buffer 3)
+  if (state.meso?.isDeload && state.meso.deloadType === 'partial') return 7;
+  const count = currentSetsCount(ex);
+  // Ultima serie degli esercizi di isolamento/accessori a cedimento (RPE 10)
+  if (setIndex === count - 1 && !ex.oneRM) return 10;
+  return 9; // Standard Liparoti per serie allenanti
+}
 
 // ---------- RM ----------
 
@@ -214,6 +305,8 @@ function closeInto(s, opts = {}) {
       .filter((i) => i.sets.length);
     if (!items.length) return null;
     const all = items.flatMap((i) => i.sets);
+    const withRpe = all.filter((x) => x.rpe);
+    const avgRpe = withRpe.length ? +(withRpe.reduce((acc, x) => acc + x.rpe, 0) / withRpe.length).toFixed(1) : null;
     entry = {
       id: a.id,
       type: 'workout',
@@ -226,7 +319,16 @@ function closeInto(s, opts = {}) {
       sets: all.length,
       reps: all.reduce((x, y) => x + y.reps, 0),
       volume: Math.round(all.reduce((x, y) => x + y.reps * y.kg, 0)),
+      avgRpe,
+      week: s.meso?.week ?? 1,
+      isDeload: !!s.meso?.isDeload,
     };
+    if (s.phase === 'fase1' && !s.meso.isDeload) {
+      const pastWorkouts = s.history.filter((h) => h.type === 'workout');
+      if ((pastWorkouts.length + 1) % 4 === 0) {
+        s.meso.week = Math.min(s.meso.totalWeeks, s.meso.week + 1);
+      }
+    }
   } else {
     const ids = Object.keys(a.tested || {});
     if (!ids.length) return null;
@@ -281,7 +383,7 @@ export function remoteApply(c) {
       case 'set': {
         if (!EX[c.ex]) break;
         openWorkout(s, c.scheda, c.startedAt || c.t);
-        (s.active.sets[c.ex] ||= [])[c.i] = { reps: c.reps, kg: c.kg, t: c.t };
+        (s.active.sets[c.ex] ||= [])[c.i] = { reps: c.reps, kg: c.kg, rpe: c.rpe || 9, t: c.t };
         break;
       }
       case 'unset':
@@ -381,16 +483,60 @@ export function resetAll() {
   subs.forEach((f) => f(state));
 }
 
+export function toggleDeload(force) {
+  return update((s) => {
+    s.meso.isDeload = force !== undefined ? !!force : !s.meso.isDeload;
+  });
+}
+
+export function setDeloadType(type) {
+  return update((s) => {
+    s.meso.deloadType = type;
+  });
+}
+
+export function setWeek(w) {
+  return update((s) => {
+    s.meso.week = Math.max(1, Math.min(s.meso.totalWeeks, w));
+  });
+}
+
+export function statsByMuscleGroup(days = 7) {
+  const since = Date.now() - days * 864e5;
+  const stats = {};
+  for (const h of state.history) {
+    if (h.type !== 'workout' || h.endedAt < since) continue;
+    for (const item of h.items) {
+      const ex = EX[item.id];
+      if (!ex) continue;
+      const g = ex.group;
+      stats[g] = stats[g] || { sets: 0, volume: 0, reps: 0 };
+      const validSets = item.sets.filter(Boolean);
+      stats[g].sets += validSets.length;
+      stats[g].volume += validSets.reduce((a, s) => a + s.reps * s.kg, 0);
+      stats[g].reps += validSets.reduce((a, s) => a + s.reps, 0);
+    }
+  }
+  return stats;
+}
+
 export function exportState() {
   return JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2);
 }
 
 export function importState(obj) {
-  if (!obj || typeof obj !== 'object' || obj.v !== 1 || typeof obj.rm !== 'object' || !Array.isArray(obj.history)) {
+  if (!obj || typeof obj !== 'object' || (obj.v !== 1 && obj.v !== 2) || typeof obj.rm !== 'object' || !Array.isArray(obj.history)) {
     throw new Error('File non valido');
   }
   const d = defaults();
-  state = { ...d, ...obj, settings: { ...d.settings, ...(obj.settings || {}) }, timer: null };
+  state = {
+    ...d,
+    ...obj,
+    v: 2,
+    meso: { ...d.meso, ...(obj.meso || {}) },
+    settings: { ...d.settings, ...(obj.settings || {}) },
+    timer: null,
+  };
   delete state.exportedAt;
   persist();
   subs.forEach((f) => f(state));

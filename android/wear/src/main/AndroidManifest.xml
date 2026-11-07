@@ -16,7 +16,7 @@
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="GHISA"
+        android:label="GT Workout"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Ghisa">
@@ -65,7 +65,7 @@
         <service
             android:name=".GhisaTileService"
             android:exported="true"
-            android:label="GHISA"
+            android:label="GT Workout"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
             <intent-filter>
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
@@ -79,7 +79,7 @@
             android:name=".RestComplicationService"
             android:exported="true"
             android:icon="@drawable/ic_complication"
-            android:label="Recupero GHISA"
+            android:label="Recupero GT Workout"
             android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
             <intent-filter>
                 <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />

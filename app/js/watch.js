@@ -13,7 +13,7 @@ import { refresh, currentPath } from './nav.js';
 export const watchSupported = !!Watch;
 
 const mapSets = (sets) => Object.fromEntries(
-  Object.entries(sets || {}).map(([id, arr]) => [id, arr.map((r) => (r ? { reps: r.reps, kg: r.kg } : null))]),
+  Object.entries(sets || {}).map(([id, arr]) => [id, arr.map((r) => (r ? { reps: r.reps, kg: r.kg, rpe: r.rpe } : null))]),
 );
 
 export function buildSnapshot() {
@@ -23,6 +23,7 @@ export function buildSnapshot() {
   return {
     phase: st.phase,
     cycle: st.cycle,
+    meso: st.meso || { week: 1, isDeload: false },
     settings: {
       restMain: set.restMain, restAcc: set.restAcc, restTest: set.restTest, vibrate: set.vibrate, bar: set.bar,
     },
@@ -53,6 +54,8 @@ export function buildSnapshot() {
         rm: rmOf(e.id),
         step: KIND[e.kind].step,
         n: e.n,
+        tut: e.tut,
+        js: e.js,
       })),
     })),
   };

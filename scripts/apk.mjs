@@ -44,11 +44,13 @@ const gradle = readFileSync(join(ANDROID, 'app', 'build.gradle'), 'utf8');
 const version = gradle.match(/versionName\s+"([^"]+)"/)?.[1] ?? 'dev';
 const src = join(ANDROID, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
 mkdirSync(join(ROOT, 'dist'), { recursive: true });
-const out = join(ROOT, 'dist', `GHISA-${version}.apk`);
+const out = join(ROOT, 'dist', `GT-Workout-${version}.apk`);
 copyFileSync(src, out);
+copyFileSync(src, join(ROOT, 'dist', `GHISA-${version}.apk`));
 
 // Lo stesso Gradle costruisce anche l'app per l'orologio Wear OS (modulo :wear).
 const wearSrc = join(ANDROID, 'wear', 'build', 'outputs', 'apk', 'release', 'wear-release.apk');
-const wearOut = join(ROOT, 'dist', `GHISA-Watch-${version}.apk`);
+const wearOut = join(ROOT, 'dist', `GT-Workout-Watch-${version}.apk`);
 copyFileSync(wearSrc, wearOut);
+copyFileSync(wearSrc, join(ROOT, 'dist', `GHISA-Watch-${version}.apk`));
 console.log(`\nAPK telefono: ${out}\nAPK orologio: ${wearOut}`);

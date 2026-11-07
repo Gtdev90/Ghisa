@@ -2,23 +2,29 @@
 // timestamp di fine, quindi resta esatto anche se lo schermo si spegne o l'app viene ricaricata.
 import { gsap, punch, reduced } from '../anim.js';
 import { S, setTimer } from '../store.js';
-import { clock, beep, buzz, esc } from '../util.js';
-import { pushLayer } from '../nav.js';
+import { clock, beep, buzz, esc, unlockAudio } from '../util.js';
+import { pushLayer, go, currentPath } from '../nav.js';
+import { toast } from './sheet.js';
 
 let full = null;
 let pill = null;
 let release = null;
 let raf = 0;
+let timeoutId = null;
 let lastSec = -1;
 let ending = false;
+let expiredAlert = null; // { scheda, label }
 
 const R = 100;
 const BEZEL = 2 * Math.PI * 112;
 
 export function startRest(sec, { label = '', scheda } = {}) {
   ending = false;
-  setTimer({ endAt: Date.now() + sec * 1000, dur: sec, label, scheda });
+  expiredAlert = null;
+  const s = scheda || S().active?.scheda || '';
+  setTimer({ endAt: Date.now() + sec * 1000, dur: sec, label, scheda: s });
   lastSec = -1;
+  scheduleTimeout(sec * 1000);
   expand(true);
   loop();
 }
@@ -26,20 +32,36 @@ export function startRest(sec, { label = '', scheda } = {}) {
 /** All'avvio: se c'era un recupero ancora in corso lo riprende come capsula. */
 export function resumeTimer() {
   const t = S().timer;
-  if (!t) return;
-  if (t.endAt <= Date.now()) {
-    setTimer(null);
+  if (!t) {
+    syncTimerPill();
     return;
   }
+  const rem = t.endAt - Date.now();
+  if (rem <= 0) {
+    done();
+    return;
+  }
+  scheduleTimeout(rem);
   showPill();
   loop();
 }
 
 export function stopTimer() {
   ending = true;
+  clearTimeout(timeoutId);
+  expiredAlert = null;
   setTimer(null);
   collapse();
   hidePill();
+}
+
+function scheduleTimeout(ms) {
+  clearTimeout(timeoutId);
+  if (ms > 0) {
+    timeoutId = setTimeout(() => {
+      done();
+    }, ms);
+  }
 }
 
 function loop() {
@@ -65,7 +87,8 @@ function paint(rem, t) {
     if (!root) continue;
     const prog = root.querySelector('.rr-prog');
     if (prog && !root._intro) gsap.set(prog, { drawSVG: `0% ${Math.max(0.001, frac * 100)}%` });
-    if (sec !== lastSec) root.querySelector('[data-time]').textContent = clock(rem);
+    const timeEl = root.querySelector('[data-time]');
+    if (timeEl && sec !== lastSec) timeEl.textContent = clock(rem);
   }
   if (sec !== lastSec) {
     if (full && sec <= 3 && sec > 0 && lastSec !== -1) {
@@ -76,26 +99,75 @@ function paint(rem, t) {
   }
 }
 
+function playExpirationAlert() {
+  unlockAudio();
+  if (S().settings.sound) {
+    // Doppia suoneria nitida e squillante per ambienti rumorosi come la palestra
+    beep([[880, 0.12], [0, 0.05], [880, 0.12], [0, 0.05], [1320, 0.35]]);
+    setTimeout(() => {
+      if (S().settings.sound) beep([[880, 0.1], [0, 0.04], [1320, 0.4]]);
+    }, 650);
+  }
+  buzz([200, 100, 200, 100, 500]);
+}
+
 function done() {
   if (ending) return;
   ending = true;
-  if (S().settings.sound) beep();
-  buzz([180, 90, 180, 90, 420]);
+  clearTimeout(timeoutId);
+  const t = S().timer;
+  const scheda = t?.scheda || S().active?.scheda || '';
+  const label = t?.label || '';
   setTimer(null);
+
+  playExpirationAlert();
+
+  const path = currentPath();
+  const onWorkout = scheda && path === `/workout/${scheda}`;
+
   if (full) {
     const timeEl = full.querySelector('[data-time]');
-    timeEl.textContent = 'Via';
+    if (timeEl) timeEl.textContent = 'Via';
     full.classList.add('is-go');
     gsap.fromTo(timeEl, { scale: 0.55 }, { scale: 1, duration: 0.8, ease: 'back.out(3)' });
     gsap.fromTo(full.querySelector('.rest-flash'), { opacity: 0.55 }, { opacity: 0, duration: 1.2, ease: 'power2.out' });
-    gsap.set(full.querySelector('.rr-prog'), { drawSVG: '0% 100%' });
-    setTimeout(() => collapse(), 1500);
+    const prog = full.querySelector('.rr-prog');
+    if (prog) gsap.set(prog, { drawSVG: '0% 100%' });
+    setTimeout(() => {
+      collapse();
+      if (!onWorkout && scheda) {
+        triggerExpiredAlert(scheda, label);
+      }
+    }, 1500);
   } else if (pill) {
-    pill.classList.add('is-go');
-    pill.querySelector('[data-time]').textContent = 'Via';
-    punch(pill, 1.15);
-    setTimeout(hidePill, 3200);
+    if (onWorkout) {
+      pill.classList.add('is-go');
+      const timeEl = pill.querySelector('[data-time]');
+      if (timeEl) timeEl.textContent = 'Via';
+      punch(pill, 1.15);
+      setTimeout(() => {
+        if (!S().timer && !expiredAlert) hidePill();
+      }, 4000);
+    } else {
+      triggerExpiredAlert(scheda, label);
+    }
+  } else if (!onWorkout && scheda) {
+    triggerExpiredAlert(scheda, label);
   }
+}
+
+function triggerExpiredAlert(scheda, label) {
+  expiredAlert = { scheda, label };
+  showPill();
+  toast('Recupero terminato! Tocca per continuare.', {
+    action: 'Vai al workout',
+    onAction: () => {
+      expiredAlert = null;
+      hidePill();
+      go(`#/workout/${scheda}`);
+    },
+    ms: 10000,
+  });
 }
 
 function adjust(delta) {
@@ -109,6 +181,7 @@ function adjust(delta) {
   }
   setTimer({ ...t, endAt, dur: Math.max(t.dur, rem) });
   lastSec = -1;
+  scheduleTimeout(rem * 1000);
   if (full) punch(full.querySelector('[data-time]'), delta > 0 ? 1.08 : 0.94);
 }
 
@@ -126,8 +199,11 @@ function expand(fresh = false) {
     <div class="rest-bg"></div><div class="rest-flash"></div>
     <div class="rest-in">
       <div class="rest-top">
-        <span class="mono"><i class="rec-dot"></i>Recupero</span>
-        <button class="icon-btn" data-act="min" aria-label="Riduci a capsula" data-press><svg class="ico"><use href="#i-down"/></svg></button>
+        <span class="mono"><i class="rec-dot"></i>Recupero ${t.scheda ? `· Scheda ${t.scheda}` : ''}</span>
+        <button class="btn btn-ghost btn-sm min-pill-btn" data-act="min" aria-label="Riduci a pillola" data-press>
+          <svg class="ico"><use href="#i-down"/></svg>
+          <span>Riduci a pillola</span>
+        </button>
       </div>
       <div class="rest-dial">
         <svg class="rest-ring" viewBox="0 0 240 240" aria-hidden="true">
@@ -179,25 +255,95 @@ function collapse(fromBack = false) {
   gsap.timeline({ onComplete: () => el.remove() })
     .to(el.querySelector('.rest-in'), { y: -40, scale: 0.9, opacity: 0, duration: 0.35, ease: 'power2.in' }, 0)
     .to(el.querySelector('.rest-bg'), { opacity: 0, duration: 0.4 }, 0.1);
-  if (S().timer) showPill();
+  if (S().timer || expiredAlert) showPill();
 }
 
 function showPill() {
   const t = S().timer;
-  if (!t || pill) return;
-  pill = document.createElement('button');
-  pill.className = 'rest-pill';
-  pill.dataset.s = t.scheda || '';
-  pill.setAttribute('aria-label', 'Apri il recupero');
-  pill.innerHTML = `<svg viewBox="0 0 240 240" aria-hidden="true"><circle class="rr-track" cx="120" cy="120" r="${R}"/><circle class="rr-prog" cx="120" cy="120" r="${R}" transform="rotate(-90 120 120)"/></svg>
-    <span class="num" data-time>${clock((t.endAt - Date.now()) / 1000)}</span><span class="mono">recupero</span>`;
-  pill.addEventListener('click', () => {
-    if (S().timer) expand();
-  });
-  document.getElementById('layers').appendChild(pill);
-  document.documentElement.classList.add('has-pill');
-  lastSec = -1;
-  gsap.fromTo(pill, { y: -60, scale: 0.6, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.7, ease: 'lift', delay: 0.15 });
+  const active = S().active;
+  const path = currentPath();
+  const targetScheda = expiredAlert?.scheda || t?.scheda || active?.scheda;
+  const onWorkout = targetScheda && path === `/workout/${targetScheda}`;
+
+  if (!t && !expiredAlert && (!active || active.type !== 'workout' || onWorkout)) {
+    hidePill();
+    return;
+  }
+
+  const root = document.getElementById('layers');
+  if (!root) return;
+
+  if (!pill) {
+    pill = document.createElement('button');
+    pill.className = 'rest-pill';
+    root.appendChild(pill);
+    gsap.fromTo(pill, { y: -60, scale: 0.6, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.6, ease: 'lift' });
+  }
+
+  pill.dataset.s = targetScheda || '';
+
+  if (expiredAlert) {
+    pill.className = 'rest-pill is-go is-alert';
+    pill.setAttribute('aria-label', `Recupero terminato per Scheda ${expiredAlert.scheda}. Tocca per continuare`);
+    pill.innerHTML = `
+      <i class="rec-dot"></i>
+      <span class="num">VIA!</span>
+      <div class="pill-sub mono">
+        <b>Recupero terminato</b>
+        <small>Scheda ${expiredAlert.scheda}</small>
+      </div>
+      <span class="pill-cta mono">Vai al workout →</span>`;
+    pill.onclick = () => {
+      const s = expiredAlert.scheda;
+      expiredAlert = null;
+      hidePill();
+      go(`#/workout/${s}`);
+    };
+    return;
+  }
+
+  if (t) {
+    const rem = Math.max(0, (t.endAt - Date.now()) / 1000);
+    pill.className = 'rest-pill';
+    pill.setAttribute('aria-label', 'Apri il recupero');
+    pill.innerHTML = `
+      <svg viewBox="0 0 240 240" aria-hidden="true">
+        <circle class="rr-track" cx="120" cy="120" r="${R}"/>
+        <circle class="rr-prog" cx="120" cy="120" r="${R}" transform="rotate(-90 120 120)"/>
+      </svg>
+      <span class="num" data-time>${clock(rem)}</span>
+      <div class="pill-sub mono">
+        <span>recupero</span>
+        ${t.scheda ? `<small>Scheda ${t.scheda}</small>` : ''}
+      </div>
+      ${!onWorkout && t.scheda ? `<span class="pill-cta mono">Torna →</span>` : ''}`;
+    pill.onclick = () => {
+      if (!onWorkout && t.scheda) {
+        go(`#/workout/${t.scheda}`);
+      } else {
+        expand();
+      }
+    };
+    lastSec = -1;
+    document.documentElement.classList.add('has-pill');
+    return;
+  }
+
+  if (active && active.type === 'workout' && !onWorkout) {
+    pill.className = 'rest-pill is-session';
+    pill.setAttribute('aria-label', `Sessione in corso per Scheda ${active.scheda}`);
+    pill.innerHTML = `
+      <i class="rec-dot"></i>
+      <div class="pill-sub mono">
+        <b>Scheda ${active.scheda}</b>
+        <small>Sessione in corso</small>
+      </div>
+      <span class="pill-cta mono">Riprendi →</span>`;
+    pill.onclick = () => {
+      go(`#/workout/${active.scheda}`);
+    };
+    document.documentElement.classList.add('has-pill');
+  }
 }
 
 function hidePill(instant = false) {
@@ -211,3 +357,47 @@ function hidePill(instant = false) {
   }
   gsap.to(el, { y: -50, scale: 0.7, opacity: 0, duration: 0.35, ease: 'power2.in', onComplete: () => el.remove() });
 }
+
+export function syncTimerPill() {
+  const t = S().timer;
+  const active = S().active;
+  const path = currentPath();
+  const targetScheda = expiredAlert?.scheda || t?.scheda || active?.scheda;
+  const onWorkout = targetScheda && path === `/workout/${targetScheda}`;
+
+  if (full) {
+    if (!onWorkout && path !== `/test/${t?.scheda}` && path !== `/max/${t?.scheda}` && path !== `/rm/${t?.scheda}`) {
+      collapse(true);
+    }
+  }
+
+  if (expiredAlert) {
+    if (onWorkout) {
+      expiredAlert = null;
+      hidePill();
+    } else {
+      showPill();
+    }
+    return;
+  }
+
+  if (t) {
+    if (!full) showPill();
+  } else if (active && active.type === 'workout' && !onWorkout) {
+    showPill();
+  } else if (!full && pill) {
+    hidePill();
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    unlockAudio();
+    syncTimerPill();
+    const t = S().timer;
+    if (t) {
+      if (t.endAt <= Date.now()) done();
+      else loop();
+    }
+  }
+});
