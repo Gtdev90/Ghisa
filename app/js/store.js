@@ -1,9 +1,25 @@
 // Stato dell'app, persistito in localStorage. Tutto resta sul dispositivo.
-import { ALL, EX, SCHEDE, LETTERS, PHASE1, schedaById } from './data.js';
+// Architettura Multi-Profilo: Dati rigorosamente separati per ogni atleta.
+import {
+  ALL, EX, SCHEDE, LETTERS, PHASE1, schedaById, setProfile, CURRENT_PROFILE,
+} from './data.js';
 import { roundTo, uid } from './util.js';
 import seedData from './seed.js';
 
-const KEY = 'ghisa:v1';
+const ACTIVE_PROFILE_KEY = 'ghisa:active_profile';
+
+export const getActiveProfile = () => {
+  try {
+    const p = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_PROFILE_KEY) : null;
+    return p === 'stefania' ? 'stefania' : 'gianluca';
+  } catch {
+    return 'gianluca';
+  }
+};
+
+let activeProfile = getActiveProfile();
+
+export const profileStorageKey = (id) => `ghisa:profile:${id}`;
 
 const emptyDefaults = () => ({
   v: 2,
@@ -41,9 +57,10 @@ const emptyDefaults = () => ({
   acked: [], // ultimi id dei comandi dell'orologio già registrati (l'orologio li usa come conferma)
 });
 
-const defaults = () => {
+const defaults = (profileId = activeProfile) => {
   const base = emptyDefaults();
-  if (seedData && seedData.rm && Object.keys(seedData.rm).length > 0) {
+  // Se Stefania, pre-carica il suo storico reale salvato in seedData
+  if (profileId === 'stefania' && seedData && seedData.rm && Object.keys(seedData.rm).length > 0) {
     const workouts = (seedData.history || []).filter((h) => h.type === 'workout').length;
     const currentWeek = Math.min(5, Math.floor(workouts / 4) + 1);
     return {
@@ -67,9 +84,20 @@ const defaults = () => {
 };
 
 function load() {
-  const d = defaults();
+  const d = defaults(activeProfile);
   try {
-    const raw = localStorage.getItem(KEY);
+    const key = profileStorageKey(activeProfile);
+    let raw = localStorage.getItem(key);
+
+    // Migrazione legacy: se Gianluca non ha ancora la sua chiave ma esiste ghisa:v1, usala e salvala
+    if (!raw && activeProfile === 'gianluca') {
+      const legacy = localStorage.getItem('ghisa:v1');
+      if (legacy) {
+        raw = legacy;
+        try { localStorage.setItem(key, legacy); } catch {}
+      }
+    }
+
     if (!raw) return d;
     const s = JSON.parse(raw);
     const workouts = (s.history || []).filter((h) => h.type === 'workout').length;
@@ -106,7 +134,8 @@ export const S = () => state;
 
 function persist() {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    const key = profileStorageKey(activeProfile);
+    localStorage.setItem(key, JSON.stringify(state));
   } catch {
     // Storage pieno o non disponibile: l'app continua a funzionare in memoria.
   }
@@ -124,9 +153,30 @@ export const subscribe = (f) => {
   return () => subs.delete(f);
 };
 
+export function switchProfile(newProfileId) {
+  if (newProfileId === activeProfile) return state;
+  persist(); // salva i dati del profilo uscente
+  activeProfile = newProfileId;
+  try {
+    localStorage.setItem(ACTIVE_PROFILE_KEY, newProfileId);
+  } catch {}
+  setProfile(newProfileId); // aggiorna schede ed esercizi reattivamente
+  state = load(); // carica i dati isolati del nuovo profilo
+  subs.forEach((f) => f(state));
+  return state;
+}
+
 // ---------- Letture ----------
 
-export const rmOf = (id) => state.rm[id]?.kg ?? null;
+export const rmOf = (id) => {
+  if (state.rm[id]?.kg != null) return state.rm[id].kg;
+  // Fallback per esercizi storici spostati di scheda (es. leg-press)
+  const baseSlug = id.replace(/^[A-D]-/, '');
+  for (const [k, v] of Object.entries(state.rm)) {
+    if (k.endsWith(baseSlug) && v?.kg != null) return v.kg;
+  }
+  return null;
+};
 
 export function prevRmOf(id) {
   for (const c of state.archive) if (c.rm[id] != null) return c.rm[id];
@@ -521,14 +571,18 @@ export function statsByMuscleGroup(days = 7) {
 }
 
 export function exportState() {
-  return JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2);
+  return JSON.stringify({
+    ...state,
+    athlete: activeProfile,
+    exportedAt: new Date().toISOString(),
+  }, null, 2);
 }
 
 export function importState(obj) {
   if (!obj || typeof obj !== 'object' || (obj.v !== 1 && obj.v !== 2) || typeof obj.rm !== 'object' || !Array.isArray(obj.history)) {
     throw new Error('File non valido');
   }
-  const d = defaults();
+  const d = defaults(activeProfile);
   state = {
     ...d,
     ...obj,
@@ -538,6 +592,7 @@ export function importState(obj) {
     timer: null,
   };
   delete state.exportedAt;
+  delete state.athlete;
   persist();
   subs.forEach((f) => f(state));
 }

@@ -2,6 +2,7 @@ import { gsap, Draggable, setGlow, reduced, timing } from '../anim.js';
 import { ALL, EX, SCHEDE } from '../data.js';
 import {
   S, doneIn, doneTotal, allTested, nextScheda, estMinutes, workoutsDone, rmOf, workLoad, totalSetsOf, toggleDeload,
+  getActiveProfile, switchProfile,
 } from '../store.js';
 import { go, refresh } from '../nav.js';
 import { plateSVG } from '../ui/gear.js';
@@ -56,9 +57,14 @@ function testMap() {
 function phaseInfo() {
   const big = ALL.filter((e) => e.oneRM);
   const last = S().history[0];
+  const isWoman = getActiveProfile() === 'stefania';
   return `
     <section class="section" data-a="rise">
-      <div class="section-head"><h2>I tre fondamentali</h2><span class="mono">70% del massimale</span></div>
+      <div class="section-head">
+        <h2>${isWoman ? 'Esercizi cardine' : 'I tre fondamentali'}</h2>
+        <span class="mono">${isWoman ? 'Fase 1 · Metodo PHA' : '70% del massimale'}</span>
+      </div>
+      ${big.length > 0 ? `
       <div class="big2">
         ${big.map((e) => `
           <a class="tile" data-s="${e.scheda}" href="#/massimali">
@@ -66,7 +72,7 @@ function phaseInfo() {
             <div class="kgv"><b class="num">${kg(workLoad(e))}</b><span>kg</span></div>
             <span class="sub">1RM <b>${kg(rmOf(e.id))} kg</b></span>
           </a>`).join('')}
-      </div>
+      </div>` : ''}
     </section>
     ${last ? `
       <section class="section" data-a="rise">
@@ -105,11 +111,20 @@ export default {
     const st = S();
     const test = st.phase === 'test';
     const sug = nextScheda();
+    const currentProf = getActiveProfile();
     return `
       <header class="topbar" data-a="rise">
         <div class="wordmark"><span class="marks"><i></i><i></i><i></i><i></i></span>GT WORKOUT</div>
         <a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg class="ico"><use href="#i-sliders"/></svg></a>
       </header>
+      <div class="profile-switch" data-a="rise">
+        <button class="profile-pill ${currentProf === 'gianluca' ? 'on' : ''}" data-act="switch-profile" data-p="gianluca">
+          <span class="dot"></span> Gianluca
+        </button>
+        <button class="profile-pill ${currentProf === 'stefania' ? 'on' : ''}" data-act="switch-profile" data-p="stefania">
+          <span class="dot"></span> Stefania
+        </button>
+      </div>
       <div class="status mono" data-a="rise">
         ${test
           ? `<i class="pulse"></i><span>Fase test · <b>${doneTotal()}</b>/${ALL.length} RM rilevati</span>`
@@ -225,6 +240,17 @@ export default {
     }
 
     el.addEventListener('click', (e) => {
+      const profBtn = e.target.closest('[data-act="switch-profile"]');
+      if (profBtn) {
+        e.stopPropagation();
+        const p = profBtn.dataset.p;
+        if (p && p !== getActiveProfile()) {
+          switchProfile(p);
+          toast(`Profilo attivo: ${p === 'gianluca' ? 'Gianluca (Uomo)' : 'Stefania (Donna)'}`, { ms: 2200 });
+          refresh();
+        }
+        return;
+      }
       const d = e.target.closest('.pdot');
       if (d) goTo(+d.dataset.i);
       const deload = e.target.closest('[data-act="deload"]');

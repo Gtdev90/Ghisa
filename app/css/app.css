@@ -170,6 +170,52 @@ b, strong { font-weight: 700; }
 
 /* ---------- Barre in alto ---------- */
 .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 56px; gap: 12px; }
+.profile-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 4px;
+  margin: 2px 0 12px;
+  width: fit-content;
+}
+.profile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--fm);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--chalk3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all .2s ease;
+  user-select: none;
+}
+.profile-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line2);
+  transition: all .2s ease;
+}
+.profile-pill.on {
+  background: var(--surface);
+  color: var(--chalk);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+  border: 1px solid var(--line2);
+}
+.profile-pill.on .dot {
+  background: var(--acc);
+  box-shadow: 0 0 8px var(--acc);
+}
 .wordmark { display: flex; align-items: center; gap: 10px; font-family: var(--fd); font-weight: 900; font-size: 27px; letter-spacing: .03em; line-height: 1; }
 .wordmark .marks { display: inline-flex; gap: 2.5px; align-items: center; }
 .wordmark .marks i { display: block; width: 5px; border-radius: 1.5px; }

@@ -1,6 +1,8 @@
 import { gsap, punch, flipText, systemPrefersReduced } from '../anim.js';
+import { PROFILES } from '../data.js';
 import {
   S, setSetting, newCycle, resetAll, exportState, importState, setWeek, setDeloadType,
+  getActiveProfile, switchProfile,
 } from '../store.js';
 import { go, refresh } from '../nav.js';
 import { confirm, toast } from '../ui/sheet.js';
@@ -40,12 +42,20 @@ export default {
   render() {
     const st = S().settings;
     const test = S().phase === 'test';
+    const activeProf = getActiveProfile();
     return `
       <header class="bar">
         <button class="icon-btn" data-back="#/" aria-label="Indietro"><svg class="ico"><use href="#i-back"/></svg></button>
         <span class="bar-title mono">Impostazioni</span><span></span>
       </header>
       <h1 class="h-l" data-split style="margin-top:10px">Regolazioni</h1>
+
+      <section class="set-group" data-a="rise"><span class="mono">Profilo Atleta</span><div class="set-list">
+        ${row('Atleta attivo', 'Seleziona la scheda e il database per questo smartphone', `
+          <div class="opts" data-opt="profile">
+            ${PROFILES.map((p) => `<button data-v="${p.id}" class="${activeProf === p.id ? 'on' : ''}">${p.name}</button>`).join('')}
+          </div>`)}
+      </div></section>
 
       <section class="set-group" data-a="rise"><span class="mono">Carichi</span><div class="set-list">
         ${row('Bilanciere', 'Peso della barra: dischi per lato e riscaldamento 1RM', stepper('bar'))}
@@ -118,6 +128,16 @@ export default {
       if (opt) {
         const group = opt.closest('.opts');
         const k = group.dataset.opt;
+        if (k === 'profile') {
+          const newP = opt.dataset.v;
+          if (newP !== getActiveProfile()) {
+            switchProfile(newP);
+            punch(opt, 1.1);
+            toast(`Profilo impostato: ${newP === 'gianluca' ? 'Gianluca (Uomo)' : 'Stefania (Donna)'}`, { ms: 2200 });
+            refresh();
+          }
+          return;
+        }
         if (k === 'deloadType') {
           setDeloadType(opt.dataset.v);
           $('button', group).forEach((b) => b.classList.toggle('on', b === opt));
@@ -155,7 +175,7 @@ export default {
       } else if (act === 'export') {
         const d = new Date().toISOString().slice(0, 10);
         try {
-          await download(`gt-workout-backup-${d}.json`, exportState());
+          await download(`gt-workout-${getActiveProfile()}-backup-${d}.json`, exportState());
           toast('Backup esportato');
         } catch {
           // Condivisione annullata dall'utente: nessun messaggio.
