@@ -3,86 +3,77 @@
 const RAW = [
   {
     id: 'A', workout: 1, groups: [
-      ['Gambe/glutei', [
-        ['Squat', 1, 4, 5],
-        ['Stacco rumeno bilanciere', 10, 3, 8],
-        ['Hip thrust', 12, 3, 10],
-        ['Leg extension', 12, 3, 10],
+      ['Petto', [
+        ['Panca piana bilanciere', 1, 4, 5],
+        ['Spinte manubri su panca 30°', 10, 3, 8],
       ]],
-      ['Tricipiti', [
+      ['Schiena', [
+        ['Rematore bilanciere', 10, 3, 8],
+        ['Lat machine presa larga', 10, 3, 8],
+      ]],
+      ['Spalle', [
+        ['Alzate laterali manubri in piedi', 12, 3, 10],
+      ]],
+      ['Braccia', [
         ['French press manubri su panca piana', 10, 3, 8],
-        ['Push down corda al cavo alto', 12, 3, 10],
-      ]],
-      ['Bicipiti', [
         ['Curl manubri in piedi', 10, 3, 8],
-        ['Curl manubri su panca 60°', 12, 3, 10],
       ]],
     ],
   },
   {
     id: 'B', workout: 2, groups: [
-      ['Schiena', [
-        ['Rematore t bar triangolo', 10, 3, 8],
-        ['Pulley machine triangolo', 10, 3, 8],
-        ['Lat machine presa larga', 12, 3, 10],
-      ]],
-      ['Petto', [
-        ['Spinte manubri su panca piana', 10, 3, 8],
-      ]],
-      ['Spalle', [
-        ['Spinte in alto manubri seduto', 12, 3, 10],
-        ['Alzate laterali manubri in piedi', 12, 3, 10],
-        ['Alzate posteriori manubri a 90°', 12, 3, 10],
-      ]],
-      ['Addome', [
-        ['Sit up a terra', 14, 3, 12],
-      ]],
-    ],
-  },
-  {
-    id: 'C', workout: 3, groups: [
-      ['Schiena', [
-        ['Stacco', 1, 4, 5],
-      ]],
       ['Gambe/glutei', [
-        ['Hip thrust', 10, 3, 8],
+        ['Squat', 1, 4, 5],
+        ['Stacco rumeno bilanciere', 10, 3, 8],
         ['Leg press', 10, 3, 8],
+        ['Leg extension', 12, 3, 10],
         ['Leg curl', 12, 3, 10],
-      ]],
-      ['Bicipiti', [
-        ['Curl manubri seduto', 12, 3, 10],
-        ['Curl manubri su panca 45°', 14, 3, 12],
-      ]],
-      ['Tricipiti', [
-        ['French press corda al cavo basso', 12, 3, 10],
-        ['Push down barra al cavo alto', 14, 3, 12],
-      ]],
-    ],
-  },
-  {
-    id: 'D', workout: 4, groups: [
-      ['Spalle', [
-        ['Spinte in alto manubri seduto', 10, 3, 8],
-        ['Alzate laterali manubri seduto', 12, 3, 10],
-        ['Alzate laterali su panca 45°', 12, 3, 10],
-      ]],
-      ['Schiena', [
-        ['Lat machine presa media', 10, 3, 8],
-        ['Rematore manubrio', 10, 3, 8],
-        ['Lat machine triangolo', 12, 2, 10],
-      ]],
-      ['Gambe/glutei', [
-        ['Hyperextension', 12, 3, 10],
-        ['Abductor machine', 14, 3, 12],
+        ['Calf raise in piedi', 14, 3, 12],
       ]],
       ['Addome', [
         ['Crunch in ginocchio al cavo alto', 14, 3, 12],
       ]],
     ],
   },
+  {
+    id: 'C', workout: 3, groups: [
+      ['Spalle', [
+        ['Lento avanti bilanciere', 10, 4, 8],
+        ['Alzate posteriori a 90°', 12, 3, 12],
+      ]],
+      ['Schiena', [
+        ['Lat machine presa inversa', 10, 4, 8],
+        ['Pulley machine triangolo', 10, 3, 10],
+      ]],
+      ['Petto', [
+        ['Spinte manubri su panca piana', 10, 3, 8],
+        ['Croci ai cavi', 12, 3, 12],
+      ]],
+      ['Braccia', [
+        ['Curl manubri su panca 45°', 12, 3, 10],
+        ['Push down corda al cavo alto', 12, 3, 10],
+      ]],
+    ],
+  },
+  {
+    id: 'D', workout: 4, groups: [
+      ['Catena posteriore', [
+        ['Stacco', 1, 4, 5],
+      ]],
+      ['Gambe/glutei', [
+        ['Affondi manubri', 10, 3, 8],
+        ['Leg curl', 10, 3, 10],
+        ['Leg extension', 12, 3, 10],
+        ['Calf raise seduto', 14, 3, 15],
+      ]],
+      ['Addome', [
+        ['Sit up a terra', 14, 3, 12],
+      ]],
+    ],
+  },
 ];
 
-// Protocollo "Test massimale" per Squat e Stacco. Il riposo è quello DOPO lo step:
+// Protocollo "Test massimale" per Squat, Panca piana bilanciere e Stacco. Il riposo è quello DOPO lo step:
 // 1+2+2+2+3+4+5 = 19 minuti, la durata stimata del protocollo.
 export const PROTOCOL = {
   minutes: 19,
@@ -99,7 +90,7 @@ export const PROTOCOL = {
   ],
 };
 
-// Fase 1: Squat e Stacco al 70% del massimale, tutto il resto al 100% dell'RM rilevato.
+// Fase 1: Squat, Panca e Stacco al 70% del massimale, tutto il resto al 100% dell'RM rilevato.
 export const PHASE1 = { oneRM: 0.7, rm: 1 };
 
 export const KIND = {
@@ -110,23 +101,23 @@ export const KIND = {
   body: { label: 'Sovraccarico · 0 = corpo libero', short: 'Corpo libero', step: 1, max: 100, start: 0 },
 };
 
-const BARBELL = ['Squat', 'Stacco', 'Stacco rumeno bilanciere', 'Hip thrust'];
-const BODY = ['Sit up a terra', 'Hyperextension'];
+const BARBELL = ['Squat', 'Stacco', 'Stacco rumeno bilanciere', 'Panca piana bilanciere', 'Rematore bilanciere', 'Lento avanti bilanciere'];
+const BODY = ['Sit up a terra'];
 
 function kindOf(name) {
   if (BARBELL.includes(name)) return 'barbell';
   if (BODY.includes(name)) return 'body';
   if (/manubri|manubrio/i.test(name)) return 'dumbbell';
-  if (/cavo|pulley|lat machine/i.test(name)) return 'cable';
+  if (/cavo|pulley|lat machine|croci/i.test(name)) return 'cable';
   return 'machine';
 }
 
 // Time Under Tension (TUT):
 // 4 cifre: Eccentrica · Pausa allungamento · Concentrica · Fermo contrazione
 function tutOf(name) {
-  if (/stacco rumeno|hyperextension|panca 60|panca 45|french press/i.test(name)) return '3.0.1.0';
-  if (/leg extension|leg curl|pulley|push down|alzate|abductor/i.test(name)) return '2.0.1.1';
-  if (/sit up|crunch/i.test(name)) return '2.1.1.1';
+  if (/stacco rumeno|hyperextension|panca 60|panca 45|panca 30|french press/i.test(name)) return '3.0.1.0';
+  if (/leg extension|leg curl|pulley|push down|alzate|croci/i.test(name)) return '2.0.1.1';
+  if (/sit up|crunch|calf/i.test(name)) return '2.1.1.1';
   return '2.0.1.0';
 }
 
@@ -134,21 +125,16 @@ function tutOf(name) {
 const JS_PAIRS = {
   A: [
     ['A-french-press-manubri-su-panca-piana', 'A-curl-manubri-in-piedi', 'JS1'],
-    ['A-push-down-corda-al-cavo-alto', 'A-curl-manubri-su-panca-60', 'JS2'],
   ],
   B: [
-    ['B-pulley-machine-triangolo', 'B-spinte-manubri-su-panca-piana', 'JS1'],
-    ['B-alzate-laterali-manubri-in-piedi', 'B-alzate-posteriori-manubri-a-90', 'JS2'],
+    ['B-leg-extension', 'B-leg-curl', 'JS1'],
   ],
   C: [
-    ['C-leg-press', 'C-leg-curl', 'JS1'],
-    ['C-curl-manubri-seduto', 'C-french-press-corda-al-cavo-basso', 'JS2'],
-    ['C-curl-manubri-su-panca-45', 'C-push-down-barra-al-cavo-alto', 'JS3'],
+    ['C-curl-manubri-su-panca-45', 'C-push-down-corda-al-cavo-alto', 'JS1'],
+    ['C-pulley-machine-triangolo', 'C-croci-ai-cavi', 'JS2'],
   ],
   D: [
-    ['D-spinte-in-alto-manubri-seduto', 'D-lat-machine-presa-media', 'JS1'],
-    ['D-alzate-laterali-manubri-seduto', 'D-alzate-laterali-su-panca-45', 'JS2'],
-    ['D-hyperextension', 'D-crunch-in-ginocchio-al-cavo-alto', 'JS3'],
+    ['D-leg-extension', 'D-leg-curl', 'JS1'],
   ],
 };
 
