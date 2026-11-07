@@ -81,7 +81,7 @@ export default {
       </div>
       ${hasStats ? `
         <div class="groups-volume" data-a="rise" style="margin:16px 0;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px">
-          <div class="section-head" style="margin:0 0 10px"><span class="mono">Serie per distretto (Liparoti)</span><span class="mono">ultimi 7 giorni</span></div>
+          <div class="section-head" style="margin:0 0 10px"><span class="mono">Serie per gruppo muscolare</span><span class="mono">ultimi 7 giorni</span></div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:8px">
             ${Object.entries(stats).map(([grp, d]) => `
               <div style="background:var(--s2);padding:8px 6px;border-radius:var(--r1);text-align:center">

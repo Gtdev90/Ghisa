@@ -337,7 +337,7 @@ export default {
           <div class="mono" style="text-align:center;margin-top:-8px">ripetizioni fatte</div>
           <div data-wp></div>
           <div class="rpe-picker">
-            <div class="mono" style="text-align:center;font-size:12px;margin:12px 0 6px">Intensità / RPE (Liparoti)</div>
+            <div class="mono" style="text-align:center;font-size:12px;margin:12px 0 6px">Intensità / Scala RPE (RIR)</div>
             <div class="rpe-row">
               <button class="rpe-btn ${selectedRpe === 7 ? 'on' : ''}" data-rpe="7"><b>@7</b><small>buffer 3</small></button>
               <button class="rpe-btn ${selectedRpe === 8 ? 'on' : ''}" data-rpe="8"><b>@8</b><small>buffer 2</small></button>

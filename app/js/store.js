@@ -28,7 +28,7 @@ const emptyDefaults = () => ({
     vibrate: true,
     wake: true,
     motion: 'full', // richiesta esplicita: animazioni sempre piene; 'auto' segue il sistema
-    trackRpe: true, // Registrazione RPE / RIR (Liparoti: RPE 9 standard, RPE 10 cedimento)
+    trackRpe: true, // Registrazione RPE / RIR (RPE 9 target, RPE 10 cedimento)
     autoDrop: true, // Suggerimento intelligente drop carico su affaticamento neurale
   },
   rm: {}, // exId -> { kg, manual, manualAt, date, attempts: [{ kg, ok, t }] }
@@ -181,7 +181,7 @@ export function currentSetsCount(ex) {
   if (state.meso.deloadType === 'medium') {
     return Math.max(1, Math.round(ex.sets / 2));
   }
-  // Scarico parziale: -1 serie per esercizio (Liparoti p. 315)
+  // Scarico parziale: -1 serie per esercizio (scarico di volume)
   return Math.max(1, ex.sets - 1);
 }
 
@@ -192,7 +192,7 @@ export function totalSetsOf(sid) {
 export function currentTargetLoad(ex) {
   const base = workLoad(ex);
   if (base == null) return null;
-  // Scarico medio: carichi abbassati del 10% (Liparoti p. 315)
+  // Scarico medio: carichi abbassati del 10% (scarico di intensità)
   if (state.phase === 'fase1' && state.meso?.isDeload && state.meso.deloadType === 'medium') {
     return Math.max(state.settings.bar, roundTo(base * 0.90, state.settings.round));
   }
@@ -207,7 +207,7 @@ export function targetRpe(ex, setIndex) {
   const count = currentSetsCount(ex);
   // Ultima serie degli esercizi di isolamento/accessori a cedimento (RPE 10)
   if (setIndex === count - 1 && !ex.oneRM) return 10;
-  return 9; // Standard Liparoti per serie allenanti
+  return 9; // Target standard per serie allenanti (RIR 1)
 }
 
 // ---------- RM ----------

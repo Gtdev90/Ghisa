@@ -52,7 +52,7 @@ export default {
         ${row('Arrotondamento', 'Per i carichi in percentuale (70%, riscaldamento)', `<div class="opts" data-opt="round">${[0.5, 1, 1.25, 2.5].map((v) => `<button data-v="${v}" class="${st.round === v ? 'on' : ''}">${kg(v)}</button>`).join('')}</div>`)}
       </div></section>
 
-      <section class="set-group" data-a="rise"><span class="mono">Metodologia scientifica (Liparoti)</span><div class="set-list">
+      <section class="set-group" data-a="rise"><span class="mono">Metodologia scientifica (Periodizzazione & RPE)</span><div class="set-list">
         ${row('Intensità RPE / RIR', 'Traccia la riserva di ripetizioni sulle serie (RPE 9 standard, RPE 10 cedimento)', toggle('trackRpe'))}
         ${row('Auto-drop carico', 'Suggerisce -2,5 kg se la serie precedente è stata a cedimento', toggle('autoDrop'))}
         ${row('Modalità di scarico', 'Protocollo applicato quando attivi la Settimana di Scarico', `<div class="opts" data-opt="deloadType">${[['partial', 'Parziale (-1 set, @7)'], ['medium', 'Medio (-10% kg, 50% set)']].map(([v, l]) => `<button data-v="${v}" class="${(S().meso?.deloadType || 'partial') === v ? 'on' : ''}">${l}</button>`).join('')}</div>`)}

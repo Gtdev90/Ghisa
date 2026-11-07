@@ -121,7 +121,7 @@ function kindOf(name) {
   return 'machine';
 }
 
-// Time Under Tension (Liparoti / Project Bodybuilding):
+// Time Under Tension (TUT):
 // 4 cifre: Eccentrica · Pausa allungamento · Concentrica · Fermo contrazione
 function tutOf(name) {
   if (/stacco rumeno|hyperextension|panca 60|panca 45|french press/i.test(name)) return '3.0.1.0';
