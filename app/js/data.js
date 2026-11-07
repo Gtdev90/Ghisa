@@ -127,7 +127,7 @@ const RAW_STEFANIA = [
         ['Rematore t bar triangolo', 10, 3, 8],
         ['Leg curl', 12, 3, 10],
         ['Spinte in alto manubri seduto', 10, 3, 10],
-        ['Hyperextension', 12, 3, 12],
+        ['Calf raise in piedi', 14, 3, 15],
         ['Pulley machine triangolo', 10, 3, 10],
       ]],
       ['Addome', [
@@ -178,7 +178,7 @@ const JS_PAIRS_STEFANIA = {
   B: [
     ['B-leg-press', 'B-rematore-t-bar-triangolo', 'JS1'],
     ['B-leg-curl', 'B-spinte-in-alto-manubri-seduto', 'JS2'],
-    ['B-hyperextension', 'B-pulley-machine-triangolo', 'JS3'],
+    ['B-calf-raise-in-piedi', 'B-pulley-machine-triangolo', 'JS3'],
   ],
   C: [
     ['C-affondi-manubri', 'C-alzate-posteriori-manubri-a-90', 'JS1'],
