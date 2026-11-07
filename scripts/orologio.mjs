@@ -36,6 +36,10 @@ let target = remaining[0];
 
 const adb = (...a) => execFileSync(ADB, a, { stdio: 'inherit' });
 
+try {
+  execFileSync(ADB, ['start-server'], { stdio: 'ignore' });
+} catch {}
+
 if (pairAddr && pairCode) {
   console.log(`Associazione in corso con ${pairAddr}...`);
   adb('pair', pairAddr, pairCode);
