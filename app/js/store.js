@@ -10,10 +10,11 @@ const ACTIVE_PROFILE_KEY = 'ghisa:active_profile';
 
 export const getActiveProfile = () => {
   try {
-    const p = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_PROFILE_KEY) : null;
-    return p === 'stefania' ? 'stefania' : 'gianluca';
+    let p = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_PROFILE_KEY) : null;
+    if (p === 'gianluca') p = 'giulio';
+    return p === 'stefania' ? 'stefania' : 'giulio';
   } catch {
-    return 'gianluca';
+    return 'giulio';
   }
 };
 
@@ -89,9 +90,9 @@ function load() {
     const key = profileStorageKey(activeProfile);
     let raw = localStorage.getItem(key);
 
-    // Migrazione legacy: se Gianluca non ha ancora la sua chiave ma esiste ghisa:v1, usala e salvala
-    if (!raw && activeProfile === 'gianluca') {
-      const legacy = localStorage.getItem('ghisa:v1');
+    // Migrazione legacy: se Giulio non ha ancora la sua chiave ma esiste ghisa:profile:gianluca o ghisa:v1, usala e salvala
+    if (!raw && activeProfile === 'giulio') {
+      const legacy = localStorage.getItem('ghisa:profile:gianluca') || localStorage.getItem('ghisa:v1');
       if (legacy) {
         raw = legacy;
         try { localStorage.setItem(key, legacy); } catch {}

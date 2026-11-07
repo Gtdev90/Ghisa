@@ -1,16 +1,16 @@
-// Programma di allenamento multi-profilo: Gianluca (Uomo) & Stefania (Donna).
+// Programma di allenamento multi-profilo: Giulio (Uomo) & Stefania (Donna).
 // I dati e gli schemi rimangono rigorosamente isolati e separati nel rispettivo profilo.
 
 export const PROFILES = [
-  { id: 'gianluca', name: 'Gianluca', subtitle: 'Scheda Uomo · Ipertrofia & Forza', gender: 'uomo' },
+  { id: 'giulio', name: 'Giulio', subtitle: 'Scheda Uomo · Ipertrofia & Forza', gender: 'uomo' },
   { id: 'stefania', name: 'Stefania', subtitle: 'Scheda Donna · PHA Ricomposizione', gender: 'donna' },
 ];
 
 // =========================================================================
-// 1. PROGRAMMA GIANLUCA (UOMO) — Upper / Lower su 4 giorni
+// 1. PROGRAMMA GIULIO (UOMO) — Upper / Lower su 4 giorni
 // I 3 Grandi Fondamentali a 1RM (Panca, Squat, Stacco) @ 70% 4x5 + Tensione Meccanica
 // =========================================================================
-const RAW_GIANLUCA = [
+const RAW_GIULIO = [
   {
     id: 'A', workout: 1, groups: [
       ['Petto', [
@@ -83,7 +83,7 @@ const RAW_GIANLUCA = [
   },
 ];
 
-const JS_PAIRS_GIANLUCA = {
+const JS_PAIRS_GIULIO = {
   A: [
     ['A-french-press-manubri-su-panca-piana', 'A-curl-manubri-in-piedi', 'JS1'],
   ],
@@ -247,17 +247,18 @@ const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ°]/g, '').toLowerCase()
 // GESTIONE REATTIVA DEL PROFILO ATTIVO
 // In-place mutation degli array/oggetti esportati: mantiene l'identità dei riferimenti
 // =========================================================================
-export let CURRENT_PROFILE = 'gianluca';
+export let CURRENT_PROFILE = 'giulio';
 
 export const SCHEDE = [];
 export const ALL = [];
 export const EX = {};
 export const LETTERS = [];
 
-export function setProfile(id = 'gianluca') {
+export function setProfile(id = 'giulio') {
+  if (id === 'gianluca') id = 'giulio';
   CURRENT_PROFILE = id;
-  const raw = id === 'stefania' ? RAW_STEFANIA : RAW_GIANLUCA;
-  const jsPairs = id === 'stefania' ? JS_PAIRS_STEFANIA : JS_PAIRS_GIANLUCA;
+  const raw = id === 'stefania' ? RAW_STEFANIA : RAW_GIULIO;
+  const jsPairs = id === 'stefania' ? JS_PAIRS_STEFANIA : JS_PAIRS_GIULIO;
 
   const schede = raw.map((s) => {
     let n = 0;
@@ -316,11 +317,12 @@ export function setProfile(id = 'gianluca') {
 
 export const schedaById = (id) => SCHEDE.find((s) => s.id === id);
 
-// Inizializza con il profilo salvato su questo smartphone, o default 'gianluca'
-let initialProfile = 'gianluca';
+// Inizializza con il profilo salvato su questo smartphone, o default 'giulio'
+let initialProfile = 'giulio';
 try {
-  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('ghisa:active_profile') : null;
-  if (saved && (saved === 'gianluca' || saved === 'stefania')) {
+  let saved = typeof localStorage !== 'undefined' ? localStorage.getItem('ghisa:active_profile') : null;
+  if (saved === 'gianluca') saved = 'giulio';
+  if (saved && (saved === 'giulio' || saved === 'stefania')) {
     initialProfile = saved;
   }
 } catch {}

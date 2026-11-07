@@ -133,7 +133,7 @@ export default {
           if (newP !== getActiveProfile()) {
             switchProfile(newP);
             punch(opt, 1.1);
-            toast(`Profilo impostato: ${newP === 'gianluca' ? 'Gianluca (Uomo)' : 'Stefania (Donna)'}`, { ms: 2200 });
+            toast(`Profilo impostato: ${newP === 'giulio' ? 'Giulio (Uomo)' : 'Stefania (Donna)'}`, { ms: 2200 });
             refresh();
           }
           return;
