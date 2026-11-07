@@ -161,8 +161,12 @@ export default {
           // Condivisione annullata dall'utente: nessun messaggio.
         }
       } else if (act === 'watchsync') {
-        await watchSendNow();
-        toast('Inviato all\'orologio');
+        try {
+          await watchSendNow();
+          toast('Stato inviato all\'orologio');
+        } catch (err) {
+          toast(`Invio fallito: ${err?.message || err}`);
+        }
       } else if (act === 'import') {
         $('[data-file]', el).click();
       } else if (act === 'reset') {
@@ -179,8 +183,9 @@ export default {
         const d = $('[data-wstatus]', el);
         if (!d) return;
         if (r.connected) d.textContent = `Collegato · ${r.nodes.join(', ')}`;
-        else if (r.unavailable) d.textContent = 'Wear OS non disponibile: accoppia l\'orologio con l\'app Wear OS';
-        else d.textContent = 'Nessun orologio collegato';
+        else if (r.error) d.textContent = `Errore: ${r.error}`;
+        else if (r.unavailable) d.textContent = 'Wear OS non disponibile';
+        else d.textContent = 'Nessun orologio rilevato (verifica OHealth / Bluetooth)';
       });
     }
 

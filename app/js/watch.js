@@ -77,10 +77,12 @@ async function push(force = false) {
     console.log('[GT-Watch] Invio stato a Wear OS... (phase:', snap.phase, ')');
     await Watch.push({ state: JSON.stringify({ rev: Date.now(), ...snap }) });
     console.log('[GT-Watch] Stato inviato con successo all\'orologio!');
+    return true;
   } catch (e) {
     lastSent = ''; // riproverà al prossimo cambio
     console.warn('[GT-Watch] Errore invio stato a Wear OS:', e?.message || e);
     if (isUnavailable(e?.message || e)) pausedUntil = Date.now() + 60_000;
+    throw e;
   }
 }
 
@@ -115,12 +117,18 @@ export async function drain() {
 }
 
 export async function watchStatus() {
-  if (!Watch) return { supported: false, connected: false, nodes: [] };
+  if (!Watch) return { supported: false, connected: false, nodes: [], error: 'Plugin Watch non registrato' };
   try {
     const r = await Watch.status();
-    return { supported: true, connected: !!r.connected, nodes: r.nodes || [], unavailable: isUnavailable(r.error) };
-  } catch {
-    return { supported: true, connected: false, nodes: [] };
+    return {
+      supported: true,
+      connected: !!r?.connected,
+      nodes: r?.nodes || [],
+      error: r?.error,
+      unavailable: isUnavailable(r?.error),
+    };
+  } catch (e) {
+    return { supported: true, connected: false, nodes: [], error: e?.message || String(e) };
   }
 }
 

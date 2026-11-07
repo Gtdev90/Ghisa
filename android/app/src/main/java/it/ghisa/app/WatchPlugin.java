@@ -61,12 +61,19 @@ public class WatchPlugin extends Plugin {
             call.reject("state mancante");
             return;
         }
+        android.util.Log.d("GTWatchPlugin", "push() invio a /state (" + state.length() + " chars)");
         PutDataRequest req = PutDataRequest.create("/state")
                 .setData(state.getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 .setUrgent();
         Wearable.getDataClient(getContext()).putDataItem(req)
-                .addOnSuccessListener(item -> call.resolve())
-                .addOnFailureListener(e -> call.reject("invio fallito: " + e.getMessage()));
+                .addOnSuccessListener(item -> {
+                    android.util.Log.d("GTWatchPlugin", "push() riuscito: " + item.getUri());
+                    call.resolve();
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("GTWatchPlugin", "push() fallito: " + e.getMessage());
+                    call.reject("invio fallito: " + e.getMessage());
+                });
     }
 
     @PluginMethod
@@ -95,16 +102,40 @@ public class WatchPlugin extends Plugin {
 
     @PluginMethod
     public void status(PluginCall call) {
+        android.util.Log.d("GTWatchPlugin", "status() interrogazione nodi...");
         Wearable.getNodeClient(getContext()).getConnectedNodes()
                 .addOnSuccessListener(nodes -> {
-                    JSObject out = new JSObject();
-                    JSArray names = new JSArray();
-                    for (com.google.android.gms.wearable.Node n : nodes) names.put(n.getDisplayName());
-                    out.put("connected", !nodes.isEmpty());
-                    out.put("nodes", names);
-                    call.resolve(out);
+                    android.util.Log.d("GTWatchPlugin", "getConnectedNodes() nodi trovati: " + nodes.size());
+                    if (!nodes.isEmpty()) {
+                        JSObject out = new JSObject();
+                        JSArray names = new JSArray();
+                        for (com.google.android.gms.wearable.Node n : nodes) names.put(n.getDisplayName());
+                        out.put("connected", true);
+                        out.put("nodes", names);
+                        call.resolve(out);
+                        return;
+                    }
+                    Wearable.getCapabilityClient(getContext())
+                            .getCapability("gt_workout_watch", com.google.android.gms.wearable.CapabilityClient.FILTER_REACHABLE)
+                            .addOnSuccessListener(cap -> {
+                                java.util.Set<com.google.android.gms.wearable.Node> capNodes = cap.getNodes();
+                                android.util.Log.d("GTWatchPlugin", "Capability gt_workout_watch nodi: " + capNodes.size());
+                                JSObject out = new JSObject();
+                                JSArray names = new JSArray();
+                                for (com.google.android.gms.wearable.Node n : capNodes) names.put(n.getDisplayName());
+                                out.put("connected", !capNodes.isEmpty());
+                                out.put("nodes", names);
+                                call.resolve(out);
+                            })
+                            .addOnFailureListener(e -> {
+                                JSObject out = new JSObject();
+                                out.put("connected", false);
+                                out.put("nodes", new JSArray());
+                                call.resolve(out);
+                            });
                 })
                 .addOnFailureListener(e -> {
+                    android.util.Log.w("GTWatchPlugin", "status() fallito: " + e.getMessage());
                     JSObject out = new JSObject();
                     out.put("connected", false);
                     out.put("nodes", new JSArray());
