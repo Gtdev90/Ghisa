@@ -82,8 +82,9 @@ object Repo {
     suspend fun fetchState() {
         try {
             val buf = Wearable.getDataClient(appCtx)
-                .getDataItems(Uri.Builder().scheme("wear").path("/state").build()).await()
+                .getDataItems(Uri.parse("wear://*/state")).await()
             try {
+                Log.d(TAG, "fetchState: elementi trovati ${buf.count}")
                 for (item in buf) {
                     val json = item.data?.toString(Charsets.UTF_8) ?: continue
                     onState(json)
@@ -104,6 +105,7 @@ object Repo {
             Log.w(TAG, "stato non valido: ${it.message}")
             return
         }
+        Log.d(TAG, "onState: ricevuto stato valido rev=${snap.rev}")
         val cur = base
         if (cur != null && snap.rev < cur.rev) return
         prefs.edit().putString("state", json).apply()

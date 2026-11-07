@@ -93,13 +93,13 @@ fun HomeScreen(ui: UiState, nav: NavHostController, ensurePermissions: () -> Uni
         item {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Bars()
-                T("GHISA", 20.sp, weight = FontWeight.ExtraBold, family = Display, spacing = 1.sp)
+                T("GT WORKOUT", 20.sp, weight = FontWeight.ExtraBold, family = Display, spacing = 1.sp)
             }
         }
         if (snap == null) {
             item {
                 Column(Modifier.padding(top = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    T("Apri GHISA sul telefono per sincronizzare", 13.sp, C.chalk2)
+                    T("Apri GT Workout sul telefono per sincronizzare", 13.sp, C.chalk2)
                     Spacer(Modifier.height(4.dp))
                     Mono("serve la prima volta", size = 8.sp)
                 }

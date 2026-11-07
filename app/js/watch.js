@@ -67,15 +67,19 @@ let pausedUntil = 0; // se la Data Layer non c'è (nessun orologio/app Wear OS),
 const isUnavailable = (msg) => /not available|API_UNAVAILABLE/i.test(String(msg || ''));
 
 async function push(force = false) {
+  if (!Watch) return;
   if (!force && Date.now() < pausedUntil) return;
   const snap = buildSnapshot();
   const key = JSON.stringify(snap);
   if (!force && key === lastSent) return;
   lastSent = key;
   try {
+    console.log('[GT-Watch] Invio stato a Wear OS... (phase:', snap.phase, ')');
     await Watch.push({ state: JSON.stringify({ rev: Date.now(), ...snap }) });
+    console.log('[GT-Watch] Stato inviato con successo all\'orologio!');
   } catch (e) {
     lastSent = ''; // riproverà al prossimo cambio
+    console.warn('[GT-Watch] Errore invio stato a Wear OS:', e?.message || e);
     if (isUnavailable(e?.message || e)) pausedUntil = Date.now() + 60_000;
   }
 }
@@ -123,9 +127,13 @@ export async function watchStatus() {
 export const watchSendNow = () => (Watch ? push(true) : Promise.resolve());
 
 export function initWatch() {
-  if (!Watch) return;
+  if (!Watch) {
+    console.log('[GT-Watch] Watch plugin non attivo (ambiente browser/PWA o non disponibile)');
+    return;
+  }
+  console.log('[GT-Watch] Inizializzazione sync con Wear OS...');
   subscribe(schedulePush);
-  Watch.addListener('watchCmd', () => drain());
-  AppPlugin?.addListener('resume', () => { drain(); push(true); });
+  Watch.addListener?.('watchCmd', () => drain());
+  AppPlugin?.addListener?.('resume', () => { drain(); push(true); });
   drain().then(() => push(true));
 }

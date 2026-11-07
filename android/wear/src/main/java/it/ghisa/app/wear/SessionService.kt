@@ -247,7 +247,7 @@ class SessionService : LifecycleService() {
         )
         val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_status)
-            .setContentTitle("GHISA")
+            .setContentTitle("GT Workout")
             .setContentText(statusLine())
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setOngoing(true)

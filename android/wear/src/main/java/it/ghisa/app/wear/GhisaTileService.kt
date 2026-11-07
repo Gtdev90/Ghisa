@@ -28,7 +28,7 @@ class GhisaTileService : TileService() {
         val sub: String
         val color: Int
         if (snap == null) {
-            title = "GHISA"; main = "Apri l'app"; sub = "sul telefono, una volta"; color = C.chalk.toArgb()
+            title = "GT WORKOUT"; main = "Apri l'app"; sub = "sul telefono, una volta"; color = C.chalk.toArgb()
         } else if (a != null && a.isWorkout) {
             val sc = snap.scheda(a.scheda)
             val done = sc?.let { snap.setsDone(a, it) } ?: 0

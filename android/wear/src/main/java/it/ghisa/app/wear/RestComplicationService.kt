@@ -61,10 +61,10 @@ class RestComplicationService : SuspendingComplicationDataSourceService() {
                 longText = plain(if (snap.phase == "test") "Test scheda ${snap.next}" else "Workout ${sc?.workout ?: ""} · Scheda ${snap.next}")
             }
             else -> {
-                shortText = plain("GHISA"); title = ""; longText = plain("GHISA")
+                shortText = plain("GT"); title = ""; longText = plain("GT Workout")
             }
         }
-        val cd = plain("GHISA")
+        val cd = plain("GT Workout")
         return when (request.complicationType) {
             ComplicationType.SHORT_TEXT -> ShortTextComplicationData.Builder(shortText, cd)
                 .apply { if (title.isNotEmpty()) setTitle(plain(title)) }
