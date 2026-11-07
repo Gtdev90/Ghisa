@@ -32,8 +32,8 @@ if (pairAt >= 0) adb('pair', args[pairAt + 1], args[pairAt + 2]);
 adb('connect', target);
 
 const dist = join(ROOT, 'dist');
-const apk = readdirSync(dist).filter((f) => /^GHISA-Watch-.*\.apk$/.test(f)).sort().pop();
-if (!apk) throw new Error('Manca dist/GHISA-Watch-*.apk: esegui prima "npm run apk"');
+const apk = readdirSync(dist).filter((f) => /^(GT-Workout|GHISA)-Watch-.*\.apk$/.test(f)).sort().pop();
+if (!apk) throw new Error('Manca dist/GT-Workout-Watch-*.apk: esegui prima "npm run apk"');
 adb('-s', target, 'install', '-r', join(dist, apk));
 adb('-s', target, 'shell', 'pm', 'grant', 'it.ghisa.app', 'android.permission.BODY_SENSORS');
 adb('-s', target, 'shell', 'pm', 'grant', 'it.ghisa.app', 'android.permission.ACTIVITY_RECOGNITION');
