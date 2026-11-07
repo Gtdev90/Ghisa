@@ -60,8 +60,8 @@ const emptyDefaults = () => ({
 
 const defaults = (profileId = activeProfile) => {
   const base = emptyDefaults();
-  // Se Stefania, pre-carica il suo storico reale salvato in seedData
-  if (profileId === 'stefania' && seedData && seedData.rm && Object.keys(seedData.rm).length > 0) {
+  // Il seedData appartiene a GIULIO (i suoi progressi reali registrati nel file di backup)
+  if (profileId === 'giulio' && seedData && seedData.rm && Object.keys(seedData.rm).length > 0) {
     const workouts = (seedData.history || []).filter((h) => h.type === 'workout').length;
     const currentWeek = Math.min(5, Math.floor(workouts / 4) + 1);
     return {
@@ -81,6 +81,7 @@ const defaults = (profileId = activeProfile) => {
       },
     };
   }
+  // Stefania parte da zero: scheda PHA pulita, in fase test per rilevare i suoi carichi
   return base;
 };
 
@@ -101,6 +102,13 @@ function load() {
 
     if (!raw) return d;
     const s = JSON.parse(raw);
+
+    // Pulizia di sicurezza: se Stefania aveva erroneamente ereditato il backup di Giulio (11 sessioni, 110 kg stacco)
+    if (activeProfile === 'stefania' && s.history?.length === 11 && s.rm?.['C-stacco']?.kg === 110) {
+      const clean = emptyDefaults();
+      try { localStorage.setItem(key, JSON.stringify(clean)); } catch {}
+      return clean;
+    }
     const workouts = (s.history || []).filter((h) => h.type === 'workout').length;
     const calculatedWeek = Math.min(5, Math.floor(workouts / 4) + 1);
     const meso = {
