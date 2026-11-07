@@ -176,7 +176,9 @@ export default {
     }
 
     function currentEstimate() {
-      return mt()?.estimate ?? rmOf(id) ?? (id === 'A-squat' ? 80 : 100);
+      const name = (e.name || '').toLowerCase();
+      const def = name.includes('panca') ? 60 : name.includes('squat') ? 80 : 100;
+      return mt()?.estimate ?? rmOf(id) ?? def;
     }
 
     // ---------- Pittura ----------

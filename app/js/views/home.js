@@ -54,11 +54,11 @@ function testMap() {
 }
 
 function phaseInfo() {
-  const big = [EX['A-squat'], EX['C-stacco']];
+  const big = ALL.filter((e) => e.oneRM);
   const last = S().history[0];
   return `
     <section class="section" data-a="rise">
-      <div class="section-head"><h2>I due big</h2><span class="mono">70% del massimale</span></div>
+      <div class="section-head"><h2>I tre fondamentali</h2><span class="mono">70% del massimale</span></div>
       <div class="big2">
         ${big.map((e) => `
           <a class="tile" data-s="${e.scheda}" href="#/massimali">

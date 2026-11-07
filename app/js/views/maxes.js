@@ -49,7 +49,7 @@ export default {
     return `
       <header class="topbar" style="margin-top:8px"><h1 class="h-l" data-split>Massimali</h1></header>
       <div class="status mono" data-a="rise"><span><b>${doneTotal()}</b>/${ALL.length} rilevati · ciclo ${S().cycle}</span></div>
-      <div class="big2" data-a="rise">${tile(EX['A-squat'])}${tile(EX['C-stacco'])}</div>
+      <div class="big2" data-a="rise">${ALL.filter((e) => e.oneRM).map((e) => tile(e)).join('')}</div>
       <div class="seg" role="tablist" data-a="rise" data-s="${tab}">
         <i class="seg-ind"></i>
         ${LETTERS.map((l) => `<button role="tab" data-l="${l}" aria-selected="${l === tab}" class="${l === tab ? 'on' : ''}">${l}</button>`).join('')}

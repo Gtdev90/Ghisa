@@ -13,7 +13,7 @@ export default {
     const done = doneTotal();
     const tot = ALL.length;
     const already = S().phase === 'fase1';
-    const big = [EX['A-squat'], EX['C-stacco']].filter((e) => rmOf(e.id) != null);
+    const big = ALL.filter((e) => e.oneRM && rmOf(e.id) != null);
     return `
       <div class="unlock">
         <span class="mono" data-u="kick">${done === tot ? 'Test completato' : 'Test parziale'} · ${done}/${tot} RM</span>
@@ -22,7 +22,7 @@ export default {
           ${SCHEDE.map((s, i) => `<div class="plate-wrap" data-s="${s.id}" style="left:${i * 22}%">${plateSVG(`Scheda ${s.id} · Workout ${s.workout} · `)}</div>`).join('')}
         </div>
         <div class="u-rules">
-          <div data-u="r"><span class="mono">Squat · Stacco</span><b class="num" data-pct="70">70</b><p>% del massimale</p></div>
+          <div data-u="r"><span class="mono">I tre fondamentali</span><b class="num" data-pct="70">70</b><p>% del massimale</p></div>
           <div data-u="r"><span class="mono">Tutti gli altri</span><b class="num" data-pct="100">100</b><p>% dell'RM rilevato</p></div>
         </div>
         ${big.length ? `<p class="mono" data-u="r" style="margin-bottom:18px">${big.map((e) => `${esc(e.name)} ${e.sets}×${e.reps} @ <b style="color:var(--chalk)">${kg(workLoad(e))} kg</b>`).join(' · ')}</p>` : ''}
