@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Schede di Allenamento GT Workout — Uomo & Donna</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 14mm 14mm 14mm;
+      @bottom-right {
+        content: counter(page);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 8pt;
+        color: #888;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      font-size: 9pt;
+      line-height: 1.4;
+      color: #111;
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .doc-header {
+      border-bottom: 2.5px solid #111;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .doc-title {
+      font-size: 18pt;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin: 0;
+      text-transform: uppercase;
+      color: #0b0b0a;
+    }
+
+    .doc-sub {
+      font-size: 9pt;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .badge-program {
+      background: #0b0b0a;
+      color: #fff;
+      font-size: 8pt;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .scheda-card {
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+
+    .scheda-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #212529;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px 4px 0 0;
+      font-size: 9pt;
+      font-weight: 700;
+    }
+
+    .scheda-head .focus {
+      font-size: 8pt;
+      color: #ced4da;
+      font-weight: 400;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin-bottom: 6px;
+    }
+
+    th, td {
+      border: 1px solid #dee2e6;
+      padding: 5px 7px;
+      text-align: left;
+    }
+
+    th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: #495057;
+      font-size: 8pt;
+      text-transform: uppercase;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafbfc;
+    }
+
+    .js-tag {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 7.5pt;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-right: 4px;
+    }
+
+    .tut-code {
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      color: #444;
+      font-size: 8pt;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 8pt;
+    }
+
+    .info-pill {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- PARTE 1: SCHEDA UOMO                       -->
+  <!-- ========================================== -->
+
+  <div class="doc-header">
+    <div>
+      <h1 class="doc-title">GT Workout — Scheda Uomo</h1>
+      <div class="doc-sub">Programma Scientifico di Fase 1 (Ipertrofia Globale & Tensione Meccanica)</div>
+    </div>
+    <div class="badge-program">Atleta: Uomo · 4 Giorni</div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-pill">
+      <b>I 3 Fondamentali (1RM):</b> Panca Piana, Squat e Stacco lavorano al <b>70% del massimale 1RM (4 serie × 5 rip)</b> con buffer 2 per costruire coordinazione neuromuscolare e densità.
+    </div>
+    <div class="info-pill">
+      <b>TUT & Recuperi:</b> Rispetta la discesa lenta (es. <code>3.0.1.0</code> = 3 sec per scendere). Nei Jump Set (JS) alterni i due esercizi con 60s di pausa tra loro.
+    </div>
+  </div>
+
+  <!-- SCHEDA A UOMO -->
+  <div class="scheda-card">
+    <div class="scheda-head">
+      <span>SCHEDA A — Upper 1 (Spinta Pesante + Dorso)</span>
+      <span class="focus">Focus: Tensione Torace, Larghezza Dorsale, Spalle e Braccia</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Note / Dettaglio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#fff7ed">
+          <td><b>Panca piana bilanciere</b></td>
+          <td><b>4 × 5</b></td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>180s</td>
+          <td><b>Test 1RM &rarr; Lavoro al 70%</b> (fermo al petto pulito)</td>
+        </tr>
+        <tr>
+          <td>Spinte manubri su panca 30°</td>
+          <td>3 × 8</td>
+          <td class="tut-code">3.0.1.0</td>
+          <td>90s</td>
+          <td>Enfasi allungamento fascio clavicolare alto</td>
+        </tr>
+        <tr>
+          <td>Rematore bilanciere (o T-Bar)</td>
+          <td>3 × 8</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>90s</td>
+          <td>Gomiti aderenti al busto, schiena bloccata a 45°</td>
+        </tr>
+        <tr>
+          <td>Lat machine presa larga al petto</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>90s</td>
+          <td>Spremere i dorsali in basso per 1 secondo</td>
+        </tr>
+        <tr>
+          <td>Alzate laterali manubri in piedi</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Mignolo leggermente in alto, braccia morbide</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> French press manubri panca piana</td>
+          <td>3 × 8</td>
+          <td class="tut-code">3.0.1.0</td>
+          <td>60s</td>
+          <td>Gomiti chiusi, scendere dietro la fronte</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Curl manubri in piedi alternato</td>
+          <td>3 × 8</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60s</td>
+          <td>Supinazione del polso in salita, zero oscillazioni</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SCHEDA B UOMO -->
+  <div class="scheda-card">
+    <div class="scheda-head">
+      <span>SCHEDA B — Lower 1 (Squat + Gambe & Femorali)</span>
+      <span class="focus">Focus: Forza Quadricipiti, Catena Posteriore, Polpacci e Core</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Note / Dettaglio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#fff7ed">
+          <td><b>Squat con bilanciere</b></td>
+          <td><b>4 × 5</b></td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>180s</td>
+          <td><b>Test 1RM &rarr; Lavoro al 70%</b> (scendere sotto il parallelo)</td>
+        </tr>
+        <tr>
+          <td>Stacco rumeno bilanciere (RDL)</td>
+          <td>3 × 8</td>
+          <td class="tut-code">3.0.1.0</td>
+          <td>90s</td>
+          <td>3 secondi a scendere, bacino indietro, stretch femorali</td>
+        </tr>
+        <tr>
+          <td>Leg press 45°</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>90s</td>
+          <td>Piedi a larghezza spalle, ginocchia in linea</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Leg extension</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>45s</td>
+          <td>Fermo contrazione 1s in cima, spremere quadricipiti</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Leg curl sdraiato (o seduto)</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Flessione esplosiva, discesa controllata in 2 secondi</td>
+        </tr>
+        <tr>
+          <td>Calf raise in piedi (alla pressa/multipower)</td>
+          <td>3 × 12–15</td>
+          <td class="tut-code">2.1.1.1</td>
+          <td>60s</td>
+          <td>Pausa 1s in massimo allungamento in basso</td>
+        </tr>
+        <tr>
+          <td>Crunch al cavo alto in ginocchio</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.1.1.1</td>
+          <td>60s</td>
+          <td>Flettere il tronco, non tirare con le braccia</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SCHEDA C UOMO -->
+  <div class="scheda-card">
+    <div class="scheda-head">
+      <span>SCHEDA C — Upper 2 (Spalle, Petto & Braccia)</span>
+      <span class="focus">Focus: Deltoidi 3 capi, Spessore Schiena, Apertura Toracica</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Note / Dettaglio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lento avanti bilanciere (o Military)</td>
+          <td>4 × 8</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>90s</td>
+          <td>Spinta verticale solida, glutei e addome contratti</td>
+        </tr>
+        <tr>
+          <td>Lat machine presa inversa (o trazioni)</td>
+          <td>4 × 8</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>90s</td>
+          <td>Presa supina larghezza spalle, focus gran dorsale</td>
+        </tr>
+        <tr>
+          <td>Spinte manubri su panca piana</td>
+          <td>3 × 8</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>90s</td>
+          <td>Scendere con i gomiti a 45° rispetto al busto</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 2</span> Pulley machine triangolo</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>45s</td>
+          <td>Tirare al petto basso, adduzione scapolare decisa</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 2</span> Croci ai cavi (o Pectoral machine)</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Accorciamento pettorale puro, strizzare al centro 1s</td>
+        </tr>
+        <tr>
+          <td>Alzate posteriori a 90° (manubri o cavi)</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Focus deltoide posteriore ed extrarotatori</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Curl manubri su panca 45°</td>
+          <td>3 × 10</td>
+          <td class="tut-code">3.0.1.0</td>
+          <td>45s</td>
+          <td>Bicipite in massimo allungamento, gomiti fermi</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Push down corda al cavo alto</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Allargare la corda in basso, squeeze tricipiti 1s</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SCHEDA D UOMO -->
+  <div class="scheda-card">
+    <div class="scheda-head">
+      <span>SCHEDA D — Lower 2 (Stacco da Terra + Monolaterale)</span>
+      <span class="focus">Focus: Catena Posteriore, Lavoro Unilaterale Cosce e Polpacci</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Note / Dettaglio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#fff7ed">
+          <td><b>Stacco da terra convenzionale</b></td>
+          <td><b>4 × 5</b></td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>180s</td>
+          <td><b>Test 1RM &rarr; Lavoro al 70%</b> (tensione neurale pura)</td>
+        </tr>
+        <tr>
+          <td>Affondi camminati (o bulgaro) manubri</td>
+          <td>3 × 8–10 /gamba</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>90s</td>
+          <td>Passo lungo per glutei e femorali, busto inclinato</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Leg extension</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>45s</td>
+          <td>Isolamento quadricipiti in accorciamento</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">JS 1</span> Leg curl seduto (o sdraiato)</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Enfasi ischiocrurali, movimento controllato</td>
+        </tr>
+        <tr>
+          <td>Calf raise seduto (con sovraccarico)</td>
+          <td>3 × 15</td>
+          <td class="tut-code">2.1.1.1</td>
+          <td>60s</td>
+          <td>Focus muscolo soleo: pausa 1s in basso</td>
+        </tr>
+        <tr>
+          <td>Sit up a terra con sovraccarico</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.1.1.1</td>
+          <td>60s</td>
+          <td>Disco al petto, salita fluida senza slancio</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- ========================================== -->
+  <!-- PARTE 2: SCHEDA DONNA                      -->
+  <!-- ========================================== -->
+
+  <div class="doc-header" style="border-bottom-color:#d946ef">
+    <div>
+      <h1 class="doc-title" style="color:#a21caf">GT Workout — Scheda Donna</h1>
+      <div class="doc-sub">Programma PHA Jump Sets · Ricomposizione Corporea & Smaltimento Grasso Viscerale</div>
+    </div>
+    <div class="badge-program" style="background:#a21caf">Atleta: Donna · 4 Giorni</div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-pill">
+      <b>Metodo PHA (Peripheral Heart Action):</b> Alterna sempre un esercizio di gambe a uno di parte superiore. Il cuore lavora costantemente tra <b>125 e 140 bpm</b>, trasformando i pesi in una fornace metabolica brucia-grassi.
+    </div>
+    <div class="info-pill">
+      <b>Serie & Recuperi:</b> Esegui <b>3 serie per esercizio</b>. Fai il primo esercizio, riposa <b>60 secondi</b>, fai il secondo esercizio, riposa <b>60–90 secondi</b> e ripeti per 3 giri. Niente pause morte!
+    </div>
+  </div>
+
+  <!-- SCHEDA A DONNA -->
+  <div class="scheda-card">
+    <div class="scheda-head" style="background:#701a75">
+      <span>SCHEDA A — Quadricipiti & Spinta / Dorso</span>
+      <span class="focus">Focus: Consumo Calorico Globale, Tonificazione Torace e Glutei</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio (Jump Set)</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Come Eseguirlo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="js-tag">A1</span> Squat bilanciere (o Goblet squat)</td>
+          <td>3 × 8</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60s</td>
+          <td>Scendere controllate sotto il parallelo, petto aperto</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">A2</span> Lat machine presa larga al petto</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60–90s</td>
+          <td>Tirare al petto aprendo le spalle; ripetere A1+A2 per 3 volte</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B1</span> Stacco rumeno bilanciere</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">3.0.1.0</td>
+          <td>60s</td>
+          <td>3 secondi a scendere, bacino indietro, stretch femorali</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B2</span> Spinte manubri su panca piana</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60–90s</td>
+          <td>Unico esercizio petto della settimana: spinta solida; ripetere B1+B2</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C1</span> Leg extension</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>45s</td>
+          <td>Fermo 1s in cima per spremere i quadricipiti</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C2</span> Alzate laterali manubri in piedi</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Disegno a V delle braccia, spalle rilassate dal collo</td>
+        </tr>
+        <tr style="background:#fdf4ff">
+          <td><b>Hip thrust con bilanciere (Singolo)</b></td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>90s</td>
+          <td>Fermo 1 secondo in contrazione di picco in alto</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SCHEDA B DONNA -->
+  <div class="scheda-card">
+    <div class="scheda-head" style="background:#701a75">
+      <span>SCHEDA B — Leg Press & Dorso / Spalle</span>
+      <span class="focus">Focus: Potenziamento Cosce, Postura e Spinte Verticali</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio (Jump Set)</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Come Eseguirlo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="js-tag">A1</span> Leg Press 45°</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60s</td>
+          <td>Spinta talloni, non staccare la bassa schiena</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">A2</span> Rematore T-Bar (o manubrio)</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60–90s</td>
+          <td>Tirare portando i gomiti indietro; ripetere A1+A2 per 3 volte</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B1</span> Leg curl sdraiato (o seduto)</td>
+          <td>3 × 10–12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Isolamento femorali, salita decisa e discesa lenta</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B2</span> Spinte in alto manubri seduto (Shoulder Press)</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60–90s</td>
+          <td>Spinta verticale manubri; ripetere B1+B2 per 3 volte</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C1</span> Pulley machine triangolo</td>
+          <td>3 × 10–12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>45s</td>
+          <td>Tirata all'ombelico, petto in fuori</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C2</span> Alzate posteriori a 90° (o Face pull)</td>
+          <td>3 × 12–15</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Apertura gomiti alti per deltoidi posteriori e postura</td>
+        </tr>
+        <tr style="background:#fdf4ff">
+          <td><b>Crunch in ginocchio al cavo alto</b></td>
+          <td>3 × 12–15</td>
+          <td class="tut-code">2.1.1.1</td>
+          <td>60s</td>
+          <td>Arrotondare la colonna senza muovere il bacino</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SCHEDA C DONNA -->
+  <div class="scheda-card">
+    <div class="scheda-head" style="background:#701a75">
+      <span>SCHEDA C — Stacco & Lavoro Dinamico Brucia-Grassi</span>
+      <span class="focus">Focus: Attivazione Metabolica Massima, Glutei e Tronco</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio (Jump Set)</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Come Eseguirlo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#fff7ed">
+          <td><b>Stacco da terra convenzionale (Singolo)</b></td>
+          <td><b>3 × 6–8</b></td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>120s</td>
+          <td>Movimento madre per accendere il metabolismo di tutto il corpo</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">A1</span> Affondi camminati manubri (Lunges)</td>
+          <td>3 × 10 /gamba</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60s</td>
+          <td>Passo lungo, ginocchio posteriore vicino a terra</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">A2</span> Alzate posteriori a 90° (o Face pull)</td>
+          <td>3 × 12–15</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60–90s</td>
+          <td>Apertura gomiti alti per deltoidi posteriori e postura; ripetere A1+A2</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B1</span> Hip thrust con bilanciere</td>
+          <td>3 × 10–12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Strizzare forte i glutei in alto per 1 secondo</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B2</span> Lat machine presa inversa al petto</td>
+          <td>3 × 8–10</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60–90s</td>
+          <td>Presa supina, gomiti verso i fianchi; ripetere B1+B2</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C1</span> Push down corda al cavo alto</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>30s</td>
+          <td>Tricipiti: aprire la corda in basso</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C2</span> Curl manubri alternato in piedi</td>
+          <td>3 × 10–12</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60s</td>
+          <td>Bicipiti: unico richiamo braccia veloce della settimana</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SCHEDA D DONNA -->
+  <div class="scheda-card">
+    <div class="scheda-head" style="background:#701a75">
+      <span>SCHEDA D — Monolaterale, Glutei & Catena Posteriore</span>
+      <span class="focus">Focus: Lavoro Unilaterale, Glutei (Abductor/Hyperextension), Zero Doppioni</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 32%">Esercizio (Jump Set)</th>
+          <th style="width: 15%">Serie × Reps</th>
+          <th style="width: 13%">TUT</th>
+          <th style="width: 15%">Recupero</th>
+          <th style="width: 25%">Come Eseguirlo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="js-tag">A1</span> Squat bulgaro manubri (o Step-up)</td>
+          <td>3 × 8–10 /gamba</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60s</td>
+          <td>Piede su panca, scendere in profondità, busto inclinato a 45°</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">A2</span> Rematore 1 manubrio su panca</td>
+          <td>3 × 8–10 /lato</td>
+          <td class="tut-code">2.0.1.0</td>
+          <td>60–90s</td>
+          <td>Dalla scheda originale: tirata al fianco per il gran dorsale; ripetere A1+A2</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B1</span> Abductor machine</td>
+          <td>3 × 15</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>45s</td>
+          <td>Busto leggermente inclinato in avanti per colpire il medio gluteo</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">B2</span> Alzate laterali su panca 45°</td>
+          <td>3 × 12–15</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Dalla scheda originale: isolamento deltoide laterale con panca inclinata</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C1</span> Hyperextension su panca 45°</td>
+          <td>3 × 12</td>
+          <td class="tut-code">2.0.1.2</td>
+          <td>45s</td>
+          <td>Salire contraendo glutei e femorali per 2 secondi in alto</td>
+        </tr>
+        <tr>
+          <td><span class="js-tag">C2</span> Lat machine con triangolo</td>
+          <td>3 × 10</td>
+          <td class="tut-code">2.0.1.1</td>
+          <td>60s</td>
+          <td>Dalla scheda originale: tirata al petto con presa a triangolo stretta</td>
+        </tr>
+        <tr style="background:#fdf4ff">
+          <td><b>Plank a terra (Core profondo)</b></td>
+          <td>3 × 45s–60s</td>
+          <td class="tut-code">Isometria</td>
+          <td>60s</td>
+          <td>Attivazione trasverso addominale, ombelico risucchiato</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>
