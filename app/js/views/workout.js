@@ -3,8 +3,9 @@ import {
 } from '../anim.js';
 import { KIND, schedaById, EX } from '../data.js';
 import {
-  S, rmOf, autoLoad, todayLoad, estMinutes, lastSetsOf, startWorkout, finishSession, discardSession,
+  S, rmOf, autoLoad, todayLoad, currentTargetLoad, estMinutes, lastSetsOf, startWorkout, finishSession, discardSession,
   doSet, undoSet, setTodayLoad, setOverride, currentSetsCount, totalSetsOf, targetRpe,
+  analyzeProgression, oneRmPercent, parseReps,
 } from '../store.js';
 import { go, back } from '../nav.js';
 import { barbellSVG, weightPicker } from '../ui/gear.js';
@@ -20,6 +21,12 @@ const act = (sid) => {
   return a?.type === 'workout' && a.scheda === sid ? a : null;
 };
 
+function formatRepRange(e) {
+  if (e.oneRM) return `${e.reps}`;
+  const { min, max } = parseReps(e.reps);
+  return min === max ? `${min}` : `${min}–${max}`;
+}
+
 function tagFor(e) {
   const a = S().active;
   const isDeload = S().meso?.isDeload;
@@ -28,6 +35,8 @@ function tagFor(e) {
   }
   if (a?.loads?.[e.id] != null) return 'solo oggi';
   if (S().overrides[e.id] != null) return 'carico personalizzato';
+  const prog = analyzeProgression(e);
+  if (prog?.badge) return prog.badge;
   if (rmOf(e.id) == null) return 'tocca per impostare';
   return e.oneRM ? `70% · 1RM ${kg(rmOf(e.id))}` : `100% · ${e.testReps} RM`;
 }
@@ -42,9 +51,10 @@ function lastLine(e) {
 
 function setBtn(e, i, rec, isNext) {
   const rpeBadge = rec?.rpe ? `<span class="rpe-tag mono">@${rec.rpe}</span>` : '';
+  const targetNum = rec ? rec.reps : (parseReps(e.reps).max || e.reps);
   return `
     <button class="set ${rec ? 'done' : ''} ${isNext ? 'next' : ''}" data-act="set" data-i="${i}" style="--f:${rec ? 1 : 0}" aria-label="Serie ${i + 1}${rec ? ` fatta a ${kg(rec.kg)} kg` : ''}">
-      <span class="num">${rec ? rec.reps : e.reps}</span>
+      <span class="num">${targetNum}</span>
       <span class="mono">${rec ? `${kg(rec.kg)} kg` : `serie ${i + 1}`}</span>
       ${rpeBadge}
     </button>`;
@@ -57,6 +67,12 @@ function body(e, a) {
   const nextI = Array.from({ length: count }, (_, i) => i).find((i) => !sets[i]);
   const bar = S().settings.bar;
   const partner = e.jsPartner ? EX[e.jsPartner] : null;
+  const prog = analyzeProgression(e);
+  const repLabel = formatRepRange(e);
+  const coachTag = prog.type === 'unlocked'
+    ? 'OVERLOAD'
+    : (prog.type === '1rm' ? 'PROGRESSIONE %' : (prog.type === 'caution' ? 'CONSOLIDA' : 'DOPPIA PROG.'));
+
   return `
     <div class="xc-inner">
       <div class="xc-meta-row mono">
@@ -66,8 +82,15 @@ function body(e, a) {
           ${e.js ? `<span class="pill-js" title="Jump Set alternato">${e.js}</span>` : ''}
         </span>
       </div>
-      <div class="xc-load" style="margin-top:12px">
-        <div class="xc-sr"><span>${count}</span><i>×</i><span>${e.reps}</span></div>
+      <div class="xc-coach-tip ${prog.type === '1rm' ? 'type-1rm' : prog.type}">
+        <div class="xc-coach-header">
+          <span class="xc-coach-badge mono">${prog.badge}</span>
+          <span class="xc-coach-tag mono">${coachTag}</span>
+        </div>
+        <div class="xc-coach-note">${esc(prog.note)}</div>
+      </div>
+      <div class="xc-load" style="margin-top:10px">
+        <div class="xc-sr"><span>${count}</span><i>×</i><span>${repLabel}</span></div>
         <button class="xc-kg ${load == null ? 'empty' : ''}" data-act="load" aria-label="Cambia carico">
           <span class="num">${load != null ? kg(load) : '—'}<small>kg</small></span>
           <span class="mono">${tagFor(e)}</span>
@@ -91,11 +114,14 @@ function card(e, a) {
   const doneN = sets.filter(Boolean).length;
   const complete = doneN >= count;
   const load = todayLoad(e);
+  const prog = analyzeProgression(e);
+  const unlockBadge = prog?.type === 'unlocked' ? `<span class="xc-badge-unlocked">⚡ +${prog.step}kg</span>` : '';
+  const repLabel = formatRepRange(e);
   return `
-    <article class="xc ${complete ? 'complete' : ''}" data-ex="${e.id}" data-a="rise">
+    <article class="xc ${complete ? 'complete' : ''} ${prog?.type === 'unlocked' ? 'is-unlocked' : ''}" data-ex="${e.id}" data-a="rise">
       <button class="xc-head" data-act="toggle" aria-expanded="false">
         <span class="xc-n mono">${complete ? '✓' : pad(e.n)}</span>
-        <span class="xc-name">${esc(e.name)}<small>${count}×${e.reps} · ${load != null ? `${kg(load)} kg` : 'carico da definire'}${e.js ? ` · ${e.js}` : ''}</small></span>
+        <span class="xc-name">${esc(e.name)}${unlockBadge}<small>${count}×${repLabel} · ${load != null ? `${kg(load)} kg` : 'carico da definire'}${e.js ? ` · ${e.js}` : ''}</small></span>
         <span class="xc-dots">${Array.from({ length: count }, (_, i) => `<i class="${sets[i] ? 'on' : ''}"></i>`).join('')}</span>
       </button>
       <div class="xc-body">${body(e, a)}</div>
@@ -256,7 +282,8 @@ export default {
         return;
       }
       const defRpe = targetRpe(e, i);
-      doSet(e.id, i, { reps: e.reps, kg: load, rpe: defRpe, t: Date.now() });
+      const defReps = typeof e.reps === 'number' ? e.reps : parseReps(e.reps).min;
+      doSet(e.id, i, { reps: defReps, kg: load, rpe: defRpe, t: Date.now() });
 
       const btn = $$('.set', c)[i];
       btn.classList.add('done');
@@ -400,24 +427,25 @@ export default {
 
     function editLoad(e) {
       const a = act(sid);
-      const auto = autoLoad(e);
+      const auto = currentTargetLoad(e) ?? autoLoad(e);
       const hasOverride = S().overrides[e.id] != null;
+      const prog = analyzeProgression(e);
       let picker;
       let mode = a ? 'today' : 'always';
       sheet({
         accent: sid,
         html: `
-          <div class="sheet-head"><span class="mono">${esc(e.name)} · ${e.sets}×${e.reps}</span><h2 class="sheet-title">Carico di lavoro</h2></div>
-          <p class="sheet-text">${auto != null
-            ? `Calcolato: <b style="color:var(--chalk)">${kg(auto)} kg</b> (${e.oneRM ? `70% di 1RM ${kg(rmOf(e.id))} kg` : `100% del tuo ${e.testReps} RM`}).`
-            : 'Questo esercizio non ha ancora un RM: scegli il carico con cui lavorare.'}</p>
+          <div class="sheet-head"><span class="mono">${esc(e.name)} · ${e.sets}×${formatRepRange(e)}</span><h2 class="sheet-title">Carico di lavoro</h2></div>
+          <p class="sheet-text">${prog?.note ? esc(prog.note) : (auto != null
+            ? `Calcolato: <b style="color:var(--chalk)">${kg(auto)} kg</b> (${e.oneRM ? `${Math.round(oneRmPercent(S().meso?.week, S().meso?.isDeload) * 100)}% di 1RM ${kg(rmOf(e.id))} kg` : `100% del tuo ${e.testReps} RM`}).`
+            : 'Questo esercizio non ha ancora un RM: scegli il carico con cui lavorare.')}</p>
           <div data-wp></div>
           <div class="seg-mini">
             <button data-m="today" class="${mode === 'today' ? 'on' : ''}" ${a ? '' : 'disabled style="opacity:.35"'}>Solo oggi</button>
             <button data-m="always" class="${mode === 'always' ? 'on' : ''}">Da ora in poi</button>
           </div>
           <button class="btn btn-acc btn-xl" data-x="save">Usa questo carico</button>
-          ${hasOverride ? '<button class="link-btn" data-x="auto">Torna al carico calcolato</button>' : ''}`,
+          ${hasOverride ? '<button class="link-btn" data-x="auto">Torna al carico dell\'algoritmo</button>' : ''}`,
         onMount(panel, closeSheet) {
           picker = weightPicker($('[data-wp]', panel), { kind: e.kind, value: todayLoad(e) ?? KIND[e.kind].start, bar: S().settings.bar });
           panel.addEventListener('click', (ev) => {

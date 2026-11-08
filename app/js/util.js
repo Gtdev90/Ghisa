@@ -124,9 +124,11 @@ export async function keepAwake(on) {
     lock = null;
   }
 }
-document.addEventListener('visibilitychange', () => {
-  if (!isNative && document.visibilityState === 'visible' && wantLock) keepAwake(true);
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!isNative && document.visibilityState === 'visible' && wantLock) keepAwake(true);
+  });
+}
 
 /** Salva un file: nel browser lo scarica, nell'APK lo scrive in cache e apre il menu Condividi. */
 export async function download(name, text) {

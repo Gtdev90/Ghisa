@@ -1,9 +1,9 @@
 // Stato dell'app, persistito in localStorage. Tutto resta sul dispositivo.
 // Architettura Multi-Profilo: Dati rigorosamente separati per ogni atleta.
 import {
-  ALL, EX, SCHEDE, LETTERS, PHASE1, schedaById, setProfile, CURRENT_PROFILE,
+  ALL, EX, SCHEDE, LETTERS, PHASE1, KIND, schedaById, setProfile, CURRENT_PROFILE,
 } from './data.js';
-import { roundTo, uid } from './util.js';
+import { roundTo, uid, kg } from './util.js';
 import seedData from './seed.js';
 
 const ACTIVE_PROFILE_KEY = 'ghisa:active_profile';
@@ -192,14 +192,125 @@ export function prevRmOf(id) {
   return null;
 }
 
+export function oneRmPercent(week = 1, isDeload = false) {
+  if (isDeload) return 0.65;
+  const pcts = [0.70, 0.725, 0.75, 0.775, 0.80];
+  const idx = Math.max(0, Math.min(pcts.length - 1, (week || 1) - 1));
+  return pcts[idx];
+}
+
+export function parseReps(r) {
+  if (typeof r === 'string' && r.includes('–')) {
+    const parts = r.split('–').map((x) => parseInt(x, 10));
+    return { min: parts[0], max: parts[1] };
+  }
+  if (typeof r === 'string' && r.includes('-')) {
+    const parts = r.split('-').map((x) => parseInt(x, 10));
+    return { min: parts[0], max: parts[1] };
+  }
+  const n = typeof r === 'number' ? r : parseInt(r, 10) || 8;
+  if (n <= 5) return { min: n, max: n };
+  if (n <= 8) return { min: n, max: n + 2 };
+  if (n <= 10) return { min: n, max: n + 2 };
+  return { min: n, max: n + 3 };
+}
+
 export function autoLoad(ex) {
   const rm = rmOf(ex.id);
   if (rm == null) return null;
-  if (ex.oneRM) return Math.max(state.settings.bar, roundTo(rm * PHASE1.oneRM, state.settings.round));
+  if (ex.oneRM) {
+    const week = state.meso?.week ?? 1;
+    const isDeload = state.meso?.isDeload ?? false;
+    const pct = oneRmPercent(week, isDeload);
+    return Math.max(state.settings.bar, roundTo(rm * pct, state.settings.round));
+  }
   return rm * PHASE1.rm;
 }
 
-export const workLoad = (ex) => state.overrides[ex.id] ?? autoLoad(ex);
+export function analyzeProgression(ex) {
+  const isDeload = state.meso?.isDeload ?? false;
+  const week = state.meso?.week ?? 1;
+
+  if (ex.oneRM) {
+    const rm = rmOf(ex.id);
+    const pct = oneRmPercent(week, isDeload);
+    const kgv = rm != null ? Math.max(state.settings.bar, roundTo(rm * pct, state.settings.round)) : null;
+    const pctLabel = `${Math.round(pct * 100 * 10) / 10}%`;
+    return {
+      type: '1rm',
+      suggestedKg: kgv,
+      badge: isDeload ? 'Scarico · 65%' : `Settimana ${week} · ${pctLabel}`,
+      note: isDeload
+        ? 'Scarico attivo (65% 1RM): favorisce la supercompensazione e il recupero neurale'
+        : `Sovraccarico programmato Settimana ${week}: 4×5 al ${pctLabel} del massimale (${kg(rm)} kg)`,
+    };
+  }
+
+  const { min: minReps, max: maxReps } = parseReps(ex.reps);
+  const it = lastSetsOf(ex.id);
+  const baselineKg = rmOf(ex.id) ?? autoLoad(ex);
+
+  if (!it || !it.sets || it.sets.length === 0) {
+    return {
+      type: 'baseline',
+      suggestedKg: baselineKg,
+      badge: `Target ${minReps}–${maxReps} rip`,
+      note: baselineKg != null
+        ? `Carico iniziale: punta a completare ${minReps}–${maxReps} ripetizioni pulite`
+        : `Range target: ${minReps}–${maxReps} ripetizioni`,
+    };
+  }
+
+  const valid = it.sets.filter((s) => s && s.reps > 0 && s.kg > 0);
+  if (valid.length === 0) {
+    return {
+      type: 'baseline',
+      suggestedKg: baselineKg,
+      badge: `Target ${minReps}–${maxReps} rip`,
+      note: 'Inizia registrando le tue serie',
+    };
+  }
+
+  const lastKg = valid[0].kg;
+  const repsList = valid.map((s) => s.reps).join('·');
+  const step = KIND[ex.kind]?.step ?? 2.5;
+
+  const targetSets = currentSetsCount(ex) || 3;
+  const hitCeiling = valid.length >= targetSets && valid.every((s) => s.reps >= maxReps && s.kg >= lastKg);
+  const fellBelow = valid.some((s) => s.reps < minReps);
+
+  if (hitCeiling) {
+    const nextKg = lastKg + step;
+    return {
+      type: 'unlocked',
+      suggestedKg: nextKg,
+      prevKg: lastKg,
+      step,
+      badge: `⚡ +${step} kg sbloccati!`,
+      note: `Hai dominato ${repsList} rip @ ${kg(lastKg)} kg! Oggi l'algoritmo ti porta a ${kg(nextKg)} kg`,
+    };
+  }
+
+  if (fellBelow) {
+    return {
+      type: 'caution',
+      suggestedKg: lastKg,
+      prevKg: lastKg,
+      badge: `🎯 Mantieni ${kg(lastKg)} kg`,
+      note: `Scorsa volta ${repsList} rip: consolida almeno ${minReps} rip pulite prima di salire`,
+    };
+  }
+
+  return {
+    type: 'consolidate',
+    suggestedKg: lastKg,
+    prevKg: lastKg,
+    badge: `🎯 Mantieni ${kg(lastKg)} kg`,
+    note: `Scorsa volta ${repsList} rip: chiudi ${maxReps} rip su tutte le serie per sbloccare l'aumento`,
+  };
+}
+
+export const workLoad = (ex) => state.overrides[ex.id] ?? currentTargetLoad(ex) ?? autoLoad(ex);
 
 export const doneIn = (sid) => schedaById(sid).exercises.filter((e) => rmOf(e.id) != null).length;
 export const doneTotal = () => ALL.filter((e) => rmOf(e.id) != null).length;
@@ -249,13 +360,16 @@ export function totalSetsOf(sid) {
 }
 
 export function currentTargetLoad(ex) {
-  const base = workLoad(ex);
-  if (base == null) return null;
-  // Scarico medio: carichi abbassati del 10% (scarico di intensità)
-  if (state.phase === 'fase1' && state.meso?.isDeload && state.meso.deloadType === 'medium') {
-    return Math.max(state.settings.bar, roundTo(base * 0.90, state.settings.round));
+  if (state.active?.loads?.[ex.id] != null) return state.active.loads[ex.id];
+  if (state.overrides[ex.id] != null) return state.overrides[ex.id];
+  const prog = analyzeProgression(ex);
+  if (prog?.suggestedKg != null) {
+    if (state.phase === 'fase1' && state.meso?.isDeload && state.meso.deloadType === 'medium') {
+      return Math.max(state.settings.bar, roundTo(prog.suggestedKg * 0.90, state.settings.round));
+    }
+    return prog.suggestedKg;
   }
-  return base;
+  return autoLoad(ex);
 }
 
 export const todayLoad = (ex) => state.active?.loads?.[ex.id] ?? currentTargetLoad(ex);

@@ -1,16 +1,17 @@
 // Ponte verso i plugin nativi quando GT Workout gira come APK (Capacitor).
 // Nel browser e nella PWA `isNative` è false e si usano le API web.
-const cx = window.Capacitor || window.capacitorExports?.Capacitor || window.capacitorExports;
+const win = typeof window !== 'undefined' ? window : {};
+const cx = win.Capacitor || win.capacitorExports?.Capacitor || win.capacitorExports;
 
 export const isNative = !!(
   (typeof cx?.isNativePlatform === 'function' && cx.isNativePlatform()) ||
   (typeof cx?.Capacitor?.isNativePlatform === 'function' && cx.Capacitor.isNativePlatform()) ||
-  window.androidBridge
+  win.androidBridge
 );
 
 const reg = (typeof cx?.registerPlugin === 'function' && cx.registerPlugin.bind(cx)) ||
   (typeof cx?.Capacitor?.registerPlugin === 'function' && cx.Capacitor.registerPlugin.bind(cx.Capacitor)) ||
-  (typeof window.capacitorExports?.registerPlugin === 'function' && window.capacitorExports.registerPlugin);
+  (typeof win.capacitorExports?.registerPlugin === 'function' && win.capacitorExports.registerPlugin);
 
 const plugin = (name) => {
   if (!isNative || !reg) return null;
