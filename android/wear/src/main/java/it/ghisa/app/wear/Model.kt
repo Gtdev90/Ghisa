@@ -24,6 +24,8 @@ data class Ex(
     val group: String,
     val sets: Int,
     val reps: Int,
+    val repLabel: String? = null,
+    val note: String? = null,
     val testReps: Int,
     val oneRM: Boolean,
     val kind: String,
@@ -94,6 +96,8 @@ data class Snapshot(
                             group = e.optString("group"),
                             sets = e.optInt("sets", 3),
                             reps = e.optInt("reps", 10),
+                            repLabel = e.optString("repLabel").takeIf { it.isNotEmpty() },
+                            note = e.optString("note").takeIf { it.isNotEmpty() },
                             testReps = e.optInt("testReps", 10),
                             oneRM = e.optBoolean("oneRM"),
                             kind = e.optString("kind", "machine"),
@@ -165,10 +169,12 @@ object Cmds {
     fun start(scheda: String, startedAt: Long) =
         Cmd(base("start", startedAt).put("scheda", scheda).put("startedAt", startedAt))
 
-    fun set(scheda: String, ex: String, i: Int, reps: Int, kg: Double, rest: Int, label: String, startedAt: Long) =
+    fun set(scheda: String, ex: String, i: Int, reps: Int, kg: Double, rest: Int, label: String, startedAt: Long, endAt: Long = 0L) =
         Cmd(
             base("set").put("scheda", scheda).put("ex", ex).put("i", i).put("reps", reps).put("kg", kg)
-                .put("rest", rest).put("label", label).put("startedAt", startedAt),
+                .put("rest", rest).put("label", label).put("startedAt", startedAt).apply {
+                    if (endAt > 0L) put("endAt", endAt)
+                },
         )
 
     fun unset(ex: String, i: Int) = Cmd(base("unset").put("ex", ex).put("i", i))
@@ -183,11 +189,20 @@ object Cmds {
 
     fun discard() = Cmd(base("discard"))
 
-    fun attempt(scheda: String, ex: String, kg: Double, ok: Boolean, rest: Int, label: String, startedAt: Long) =
+    fun attempt(scheda: String, ex: String, kg: Double, ok: Boolean, rest: Int, label: String, startedAt: Long, endAt: Long = 0L) =
         Cmd(
             base("attempt").put("scheda", scheda).put("ex", ex).put("kg", kg).put("ok", ok)
-                .put("rest", rest).put("label", label).put("startedAt", startedAt),
+                .put("rest", rest).put("label", label).put("startedAt", startedAt).apply {
+                    if (endAt > 0L) put("endAt", endAt)
+                },
         )
+
+    fun adjustRest(delta: Int) = Cmd(base("adjustRest").put("delta", delta))
+
+    fun clearRest() = Cmd(base("clearRest"))
+
+    fun rest(endAt: Long, dur: Int, label: String, scheda: String) =
+        Cmd(base("rest").put("endAt", endAt).put("dur", dur).put("label", label).put("scheda", scheda))
 
     fun closeTest() = Cmd(base("closeTest"))
 }

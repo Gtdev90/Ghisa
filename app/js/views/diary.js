@@ -1,11 +1,16 @@
 import { gsap, setGlow, reduced, timing } from '../anim.js';
-import { S, deleteHistory, statsByMuscleGroup } from '../store.js';
+import {
+  S, deleteHistory, statsByMuscleGroup, allNotes, saveNote, deleteNote, noteOf,
+} from '../store.js';
+import { SCHEDE, EX } from '../data.js';
 import { refresh } from '../nav.js';
 import { plateSVG } from '../ui/gear.js';
-import { confirm } from '../ui/sheet.js';
+import { confirm, sheet, toast } from '../ui/sheet.js';
 import {
   $, $$, esc, kg, int, minutes, monthLabel, shortMonth,
 } from '../util.js';
+
+let activeTab = 'sessions'; // 'sessions' | 'notes'
 
 function setsLine(sets) {
   const same = sets.every((x) => x.kg === sets[0].kg && x.rpe === sets[0].rpe);
@@ -25,7 +30,11 @@ function entry(x) {
     ? `${minutes(x.endedAt - x.startedAt)} min · ${x.sets} serie · ${int(x.volume)} kg${rpeSub}${x.hr ? ` · ♥ ${x.hr.avg}` : ''}${deloadBadge}`
     : `${minutes(x.endedAt - x.startedAt)} min · ${x.found} RM · ${x.sets} tentativi`;
   const rows = x.type === 'workout'
-    ? x.items.map((i) => `<li><span class="nm">${esc(i.name)}</span><span class="sx">${setsLine(i.sets)}</span></li>`).join('')
+    ? x.items.map((i) => {
+      const note = noteOf(i.id);
+      const noteHtml = note ? `<div class="entry-ex-note mono"><svg class="ico"><use href="#i-note"/></svg> ${esc(note)}</div>` : '';
+      return `<li><div style="flex:1;min-width:0"><span class="nm">${esc(i.name)}</span>${noteHtml}</div><span class="sx">${setsLine(i.sets)}</span></li>`;
+    }).join('')
     : x.items.map((i) => `<li><span class="nm">${esc(i.name)}</span><span class="sx">${i.testReps === 1 ? '1RM' : `${i.testReps} RM`} · <b>${i.rm != null ? `${kg(i.rm)} kg` : '—'}</b></span></li>`).join('');
   return `
     <article class="entry" data-s="${x.scheda}" data-id="${x.id}" data-a="rise">
@@ -44,10 +53,63 @@ function entry(x) {
     </article>`;
 }
 
+function notesView(notes) {
+  return `
+    <div class="notes-view" data-a="rise">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 16px">
+        <div>
+          <h2 class="h-m" style="font-size:22px;margin:0">Raccolta note</h2>
+          <span class="mono" style="font-size:11px;color:var(--chalk3)">Appunti personali sugli esercizi</span>
+        </div>
+        <button class="btn btn-acc btn-sm" data-act="new-note" style="padding:8px 14px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px">
+          <svg class="ico" style="width:14px;height:14px"><use href="#i-plus"/></svg> Nuova nota
+        </button>
+      </div>
+      ${!notes.length ? `
+        <div class="empty-notes" data-a="rise">
+          <div class="empty-icon"><svg class="ico"><use href="#i-note"/></svg></div>
+          <h2 class="h-m">Nessuna nota personale</h2>
+          <p>Aggiungi promemoria su regolazioni di fori, sellini, impugnature o sensazioni. Le vedrai sempre durante gli allenamenti e qui in archivio.</p>
+          <button class="btn btn-acc" data-act="new-note" style="margin-top:16px"><svg class="ico"><use href="#i-plus"/></svg> Aggiungi la prima nota</button>
+        </div>
+      ` : `
+        <div class="diary-notes-list">
+          ${notes.map((n) => `
+            <article class="diary-note-card" data-s="${n.scheda || 'A'}" data-id="${n.id}">
+              <div class="diary-note-head">
+                <div style="flex:1;min-width:0">
+                  <span class="mono" style="font-size:10px;color:var(--chalk3);text-transform:uppercase;letter-spacing:.05em">${esc(n.group)} · Scheda ${n.scheda || 'A'}</span>
+                  <h3 class="diary-note-title">${esc(n.name)}</h3>
+                </div>
+                <div class="diary-note-actions">
+                  <button class="icon-btn-sm" data-act="edit-note" data-id="${n.id}" aria-label="Modifica"><svg class="ico"><use href="#i-edit"/></svg></button>
+                  <button class="icon-btn-sm danger" data-act="del-note" data-id="${n.id}" aria-label="Elimina"><svg class="ico"><use href="#i-trash"/></svg></button>
+                </div>
+              </div>
+              <div class="diary-note-text">${esc(n.text)}</div>
+              ${n.updatedAt ? `<div class="diary-note-date mono">Aggiornato il ${new Date(n.updatedAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}</div>` : ''}
+            </article>
+          `).join('')}
+        </div>
+      `}
+    </div>`;
+}
+
 export default {
   render() {
     const h = S().history;
-    const head = '<header class="topbar" style="margin-top:8px"><h1 class="h-l" data-split>Diario</h1></header>';
+    const notes = allNotes();
+    const head = `
+      <header class="topbar" style="margin-top:8px"><h1 class="h-l" data-split>Diario</h1></header>
+      <div class="seg-tabs" data-a="rise">
+        <button class="seg-tab ${activeTab === 'sessions' ? 'on' : ''}" data-act="tab-sessions">Sessioni (${h.length})</button>
+        <button class="seg-tab ${activeTab === 'notes' ? 'on' : ''}" data-act="tab-notes">Note esercizi (${notes.length})</button>
+      </div>`;
+
+    if (activeTab === 'notes') {
+      return `${head}${notesView(notes)}`;
+    }
+
     if (!h.length) {
       return `${head}
         <div class="empty" data-s="${S().phase === 'test' ? 'A' : 'B'}">
@@ -108,11 +170,148 @@ export default {
     const plate = $('.empty .plate', el);
     if (plate && !reduced) gsap.to(plate, { rotation: 360, duration: 40, repeat: -1, ease: 'none' });
 
+    function openNoteDialog(exId, exName, exScheda) {
+      const cur = noteOf(exId);
+      sheet({
+        accent: exScheda || 'B',
+        html: `
+          <div class="sheet-head">
+            <span class="mono">${esc(exName || exId)} · Scheda ${exScheda || 'A'}</span>
+            <h2 class="sheet-title">Nota personale</h2>
+          </div>
+          <p class="sheet-text">Appunti su regolazioni macchine, sellino, impugnatura o postura. Rimangono visibili ogni volta che esegui questo esercizio.</p>
+          <div class="note-input-wrap">
+            <textarea class="note-textarea" rows="4" maxlength="300" placeholder="Es. Foro 4 alla panca, sellino medio, focus su stretch...">${esc(cur)}</textarea>
+          </div>
+          <div class="btn-row">
+            ${cur ? '<button class="btn btn-ghost" data-x="del-note">Elimina</button>' : '<button class="btn btn-ghost" data-x="cancel">Annulla</button>'}
+            <button class="btn btn-acc" data-x="save-note">Salva nota</button>
+          </div>`,
+        onMount(panel, closeSheet) {
+          const textarea = panel.querySelector('.note-textarea');
+          setTimeout(() => textarea?.focus(), 250);
+          panel.addEventListener('click', (ev) => {
+            const x = ev.target.closest('[data-x]')?.dataset.x;
+            if (!x) return;
+            if (x === 'cancel') {
+              closeSheet();
+            } else if (x === 'del-note') {
+              deleteNote(exId);
+              closeSheet();
+              toast('Nota eliminata');
+              refresh();
+            } else if (x === 'save-note') {
+              const val = textarea.value;
+              saveNote(exId, val);
+              closeSheet();
+              toast(val.trim() ? 'Nota salvata' : 'Nota eliminata');
+              refresh();
+            }
+          });
+        },
+      });
+    }
+
+    function openNewNoteDialog() {
+      sheet({
+        accent: 'B',
+        html: `
+          <div class="sheet-head">
+            <span class="mono">Raccolta note · Diario</span>
+            <h2 class="sheet-title">Nuova nota esercizio</h2>
+          </div>
+          <p class="sheet-text">Seleziona un esercizio e scrivi le tue note personali (regolazioni macchine, sellino, postura).</p>
+          <div class="note-input-wrap">
+            <select class="note-select" data-ex-select>
+              <option value="" disabled selected>— Seleziona esercizio —</option>
+              ${SCHEDE.map((s) => `
+                <optgroup label="Scheda ${s.id} (Workout ${s.workout})">
+                  ${s.exercises.map((e) => `<option value="${e.id}">${esc(e.name)} (${esc(e.group)})</option>`).join('')}
+                </optgroup>
+              `).join('')}
+            </select>
+            <textarea class="note-textarea" rows="4" maxlength="300" placeholder="Scrivi la tua nota personale..."></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" data-x="cancel">Annulla</button>
+            <button class="btn btn-acc" data-x="save-new">Salva nota</button>
+          </div>`,
+        onMount(panel, closeSheet) {
+          const select = panel.querySelector('[data-ex-select]');
+          const textarea = panel.querySelector('.note-textarea');
+          select.addEventListener('change', () => {
+            const id = select.value;
+            const existing = noteOf(id);
+            if (existing) textarea.value = existing;
+          });
+          panel.addEventListener('click', (ev) => {
+            const x = ev.target.closest('[data-x]')?.dataset.x;
+            if (!x) return;
+            if (x === 'cancel') {
+              closeSheet();
+            } else if (x === 'save-new') {
+              const id = select.value;
+              if (!id) {
+                toast('Seleziona prima un esercizio');
+                return;
+              }
+              const val = textarea.value;
+              saveNote(id, val);
+              closeSheet();
+              toast(val.trim() ? 'Nota salvata' : 'Nota eliminata');
+              refresh();
+            }
+          });
+        },
+      });
+    }
+
     el.addEventListener('click', async (ev) => {
       const t = ev.target.closest('[data-act]');
       if (!t) return;
+      const act = t.dataset.act;
+
+      if (act === 'tab-sessions') {
+        if (activeTab !== 'sessions') {
+          activeTab = 'sessions';
+          refresh();
+        }
+        return;
+      }
+      if (act === 'tab-notes') {
+        if (activeTab !== 'notes') {
+          activeTab = 'notes';
+          refresh();
+        }
+        return;
+      }
+      if (act === 'new-note') {
+        openNewNoteDialog();
+        return;
+      }
+      if (act === 'edit-note') {
+        const id = t.dataset.id;
+        const ex = EX[id] || Object.values(EX).find((e) => e.id.endsWith(id.replace(/^[A-D]-/, '')));
+        openNoteDialog(id, ex?.name || id, ex?.scheda || 'B');
+        return;
+      }
+      if (act === 'del-note') {
+        const id = t.dataset.id;
+        const yes = await confirm({
+          title: 'Eliminare questa nota?',
+          text: 'La nota personale verrà rimossa dall\'esercizio.',
+          ok: 'Elimina',
+          danger: true,
+        });
+        if (!yes) return;
+        deleteNote(id);
+        toast('Nota eliminata');
+        refresh();
+        return;
+      }
+
       const art = t.closest('.entry');
-      if (t.dataset.act === 'toggle') {
+      if (act === 'toggle' && art) {
         const open = !art.classList.contains('open');
         art.classList.toggle('open', open);
         t.setAttribute('aria-expanded', open);
@@ -123,7 +322,7 @@ export default {
         } else {
           gsap.to(b, { height: 0, duration: 0.4, ease: 'io' });
         }
-      } else if (t.dataset.act === 'del') {
+      } else if (act === 'del' && art) {
         const yes = await confirm({ title: 'Eliminare la sessione?', text: 'Sparisce dal diario. I massimali restano quelli attuali.', ok: 'Elimina', danger: true, accent: art.dataset.s });
         if (!yes) return;
         deleteHistory(art.dataset.id);

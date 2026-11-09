@@ -533,6 +533,7 @@ b, strong { font-weight: 700; }
 .set::before { content: ""; position: absolute; inset: -2px; border-radius: 50%; background: var(--acc); transform: scale(var(--f, 0)); z-index: -1; }
 .set::after { content: ""; position: absolute; inset: 28%; border-radius: 50%; border: 1.5px solid rgba(0, 0, 0, .18); opacity: var(--f, 0); z-index: -1; }
 .set .num { font-size: 28px; line-height: .9; }
+.set .num.num-range { font-size: 19px; letter-spacing: -0.02em; font-weight: 700; }
 .set .mono { font-size: 8.5px; color: var(--chalk3); }
 .set .rpe-tag { position: absolute; top: 4px; right: 6px; font-size: 8.5px; font-weight: 700; color: var(--chalk3); }
 .set.done { border-color: var(--acc); color: var(--acc-ink); }
@@ -919,6 +920,124 @@ b, strong { font-weight: 700; }
 #boot .boot-mark { display: flex; align-items: center; gap: 6px; height: 120px; }
 #boot .boot-mark i { display: block; width: 18px; border-radius: 4px; }
 #boot .boot-word { font-family: var(--fd); font-weight: 900; font-size: 64px; letter-spacing: .04em; line-height: 1; margin-top: 18px; text-align: center; }
+
+/* ---------- Note Personali Esercizi ---------- */
+.xc-note-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; margin-left: 6px; color: var(--yellow);
+  vertical-align: middle; opacity: .9;
+}
+.xc-note-pill .ico { width: 13px; height: 13px; }
+
+.xc-note-box { margin-top: 10px; }
+.xc-note-empty {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 7px 10px; border-radius: var(--r1);
+  background: var(--s2); border: 1px dashed var(--line2);
+  color: var(--chalk3); font-size: 11px; cursor: pointer;
+  transition: all .15s ease;
+}
+.xc-note-empty:hover { color: var(--chalk); border-color: var(--chalk3); }
+.xc-note-empty .ico { width: 13px; height: 13px; }
+
+.xc-note-card {
+  background: var(--s2); border: 1px solid var(--line2); border-left: 3px solid var(--yellow);
+  border-radius: var(--r1); padding: 9px 12px;
+}
+.xc-note-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.xc-note-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .06em; color: var(--yellow);
+}
+.xc-note-tag .ico { width: 12px; height: 12px; }
+.xc-note-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--chalk3); background: none; border: none; cursor: pointer;
+  padding: 2px 4px;
+}
+.xc-note-btn:hover { color: var(--chalk); }
+.xc-note-btn .ico { width: 12px; height: 12px; }
+.xc-note-body {
+  font-size: 13px; line-height: 1.4; color: var(--chalk); white-space: pre-wrap; word-break: break-word;
+}
+
+.note-input-wrap { width: 100%; margin: 6px 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.note-textarea {
+  width: 100%; border-radius: var(--r2); background: var(--s2);
+  border: 1px solid var(--line2); padding: 12px 14px;
+  color: var(--chalk); font-family: var(--fu); font-size: 15px; line-height: 1.4;
+  resize: vertical; outline: none; box-sizing: border-box;
+}
+.note-textarea:focus { border-color: var(--acc); }
+.note-select {
+  width: 100%; border-radius: var(--r2); background: var(--s2);
+  border: 1px solid var(--line2); padding: 12px 14px;
+  color: var(--chalk); font-family: var(--fu); font-size: 15px;
+  outline: none; box-sizing: border-box;
+}
+.note-select:focus { border-color: var(--acc); }
+
+/* ---------- Raccolta Note nel Diario ---------- */
+.seg-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px;
+  border-radius: var(--r2); background: var(--s1); border: 1px solid var(--line);
+  margin: 14px 0 16px;
+}
+.seg-tab {
+  height: 40px; border-radius: var(--r1); font-family: var(--fm); font-size: 12px;
+  font-weight: 700; color: var(--chalk3); background: transparent; border: none;
+  cursor: pointer; transition: all .2s;
+}
+.seg-tab.on {
+  background: var(--s3); color: var(--chalk);
+}
+
+.notes-view { margin-top: 4px; }
+.diary-notes-list { display: flex; flex-direction: column; gap: 10px; }
+.diary-note-card {
+  background: var(--s1); border: 1px solid var(--line); border-left: 3px solid var(--acc);
+  border-radius: var(--r2); padding: 14px 16px;
+}
+.diary-note-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+}
+.diary-note-title { font-size: 17px; font-weight: 700; margin-top: 2px; }
+.diary-note-actions { display: flex; gap: 6px; }
+.icon-btn-sm {
+  width: 32px; height: 32px; border-radius: 8px; background: var(--s2);
+  border: 1px solid var(--line); display: grid; place-items: center; color: var(--chalk2);
+  cursor: pointer; transition: all .15s ease;
+}
+.icon-btn-sm:hover { color: var(--chalk); border-color: var(--line2); }
+.icon-btn-sm.danger:hover { color: var(--red); border-color: rgba(238, 59, 47, .4); }
+.icon-btn-sm .ico { width: 14px; height: 14px; }
+.diary-note-text {
+  margin-top: 10px; font-size: 14px; line-height: 1.45; color: var(--chalk);
+  white-space: pre-wrap; word-break: break-word; background: var(--s2);
+  border-radius: var(--r1); padding: 10px 12px; border: 1px solid var(--line);
+}
+.diary-note-date { margin-top: 8px; font-size: 10.5px; color: var(--chalk3); text-align: right; }
+
+.empty-notes {
+  text-align: center; padding: 36px 16px; background: var(--s1);
+  border: 1px dashed var(--line2); border-radius: var(--r2); margin-top: 10px;
+}
+.empty-notes .empty-icon {
+  width: 54px; height: 54px; border-radius: 50%; background: var(--s2);
+  display: grid; place-items: center; margin: 0 auto 14px; color: var(--yellow);
+}
+.empty-notes .empty-icon .ico { width: 26px; height: 26px; }
+.empty-notes .h-m { font-size: 20px; color: var(--chalk); margin-bottom: 8px; }
+.empty-notes p { font-size: 13.5px; color: var(--chalk3); max-width: 38ch; margin: 0 auto; line-height: 1.4; }
+
+.entry-ex-note {
+  font-size: 10.5px; color: var(--yellow); margin-top: 2px;
+  display: flex; align-items: center; gap: 4px; opacity: .9;
+}
+.entry-ex-note .ico { width: 11px; height: 11px; flex: none; }
 
 @media (max-height: 700px) {
   .wp-val .num { font-size: 64px; }

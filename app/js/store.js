@@ -51,6 +51,7 @@ const emptyDefaults = () => ({
   rm: {}, // exId -> { kg, manual, manualAt, date, attempts: [{ kg, ok, t }] }
   overrides: {}, // exId -> kg di lavoro Fase 1 scelto a mano
   maxtest: {}, // exId -> { estimate, step, serie, attempts } protocollo 1RM in corso
+  notes: {}, // exId -> { text, updatedAt } note personali sull'esercizio
   active: null, // sessione aperta
   timer: null, // recupero in corso { endAt, dur, label, scheda }
   history: [], // sessioni chiuse, dalla più recente
@@ -557,6 +558,18 @@ export function remoteApply(c) {
         if (!EX[c.ex]) break;
         openWorkout(s, c.scheda, c.startedAt || c.t);
         (s.active.sets[c.ex] ||= [])[c.i] = { reps: c.reps, kg: c.kg, rpe: c.rpe || 9, t: c.t };
+        if (typeof c.rest === 'number') {
+          if (c.rest > 0) {
+            const endAt = c.endAt || (c.t ? c.t + c.rest * 1000 : Date.now() + c.rest * 1000);
+            if (endAt > Date.now()) {
+              s.timer = { endAt, dur: c.rest, label: c.label || '', scheda: c.scheda };
+            } else {
+              s.timer = null;
+            }
+          } else {
+            s.timer = null;
+          }
+        }
         break;
       }
       case 'unset':
@@ -569,12 +582,48 @@ export function remoteApply(c) {
         s.active = null;
         s.timer = null;
         break;
-      case 'attempt':
+      case 'attempt': {
         if (EX[c.ex]) attemptInto(s, c.ex, c.kg, !!c.ok, c.t, c.startedAt || c.t);
+        if (typeof c.rest === 'number') {
+          if (c.rest > 0) {
+            const endAt = c.endAt || (c.t ? c.t + c.rest * 1000 : Date.now() + c.rest * 1000);
+            if (endAt > Date.now()) {
+              s.timer = { endAt, dur: c.rest, label: c.label || '', scheda: c.scheda };
+            } else {
+              s.timer = null;
+            }
+          } else {
+            s.timer = null;
+          }
+        }
         break;
+      }
       case 'closeTest':
         if (s.active?.type === 'test') closeInto(s);
         break;
+      case 'clearRest':
+        s.timer = null;
+        break;
+      case 'adjustRest':
+        if (s.timer && typeof c.delta === 'number') {
+          const endAt = s.timer.endAt + c.delta * 1000;
+          const rem = (endAt - Date.now()) / 1000;
+          if (rem <= 0.5) s.timer = null;
+          else s.timer = { ...s.timer, endAt, dur: Math.max(s.timer.dur, rem) };
+        }
+        break;
+      case 'rest': {
+        const dur = c.dur || c.rest || 0;
+        if (dur > 0) {
+          const endAt = c.endAt || (c.t ? c.t + dur * 1000 : Date.now() + dur * 1000);
+          if (endAt > Date.now()) {
+            s.timer = { endAt, dur, label: c.label || '', scheda: c.scheda || s.active?.scheda || '' };
+          } else {
+            s.timer = null;
+          }
+        }
+        break;
+      }
       default:
     }
     return c;
@@ -648,6 +697,86 @@ export function setOverride(exId, kgv) {
     if (kgv == null) delete s.overrides[exId];
     else s.overrides[exId] = kgv;
   });
+}
+
+// ---------- Note personali sugli esercizi ----------
+
+export function noteOf(id) {
+  if (!id) return '';
+  const notes = state.notes || {};
+  const n = notes[id];
+  if (n) return typeof n === 'string' ? n : (n.text || '');
+  const baseSlug = id.replace(/^[A-D]-/, '');
+  for (const [k, v] of Object.entries(notes)) {
+    if (k.endsWith(baseSlug) || k === baseSlug) {
+      return typeof v === 'string' ? v : (v?.text || '');
+    }
+  }
+  return '';
+}
+
+export function noteDetailsOf(id) {
+  if (!id) return null;
+  const notes = state.notes || {};
+  const n = notes[id];
+  if (n) return typeof n === 'string' ? { text: n, updatedAt: null } : n;
+  const baseSlug = id.replace(/^[A-D]-/, '');
+  for (const [k, v] of Object.entries(notes)) {
+    if (k.endsWith(baseSlug) || k === baseSlug) {
+      return typeof v === 'string' ? { text: v, updatedAt: null } : v;
+    }
+  }
+  return null;
+}
+
+export function saveNote(id, text) {
+  if (!id) return;
+  update((s) => {
+    if (!s.notes) s.notes = {};
+    const trimmed = (text || '').trim();
+    const baseSlug = id.replace(/^[A-D]-/, '');
+    if (trimmed) {
+      s.notes[id] = { text: trimmed, updatedAt: Date.now() };
+    } else {
+      delete s.notes[id];
+      for (const k of Object.keys(s.notes)) {
+        if (k.endsWith(baseSlug) || k === baseSlug) {
+          delete s.notes[k];
+        }
+      }
+    }
+  });
+}
+
+export function deleteNote(id) {
+  saveNote(id, '');
+}
+
+export function allNotes() {
+  const list = [];
+  const seen = new Set();
+  const notesObj = state.notes || {};
+  for (const [key, val] of Object.entries(notesObj)) {
+    const text = typeof val === 'string' ? val : val?.text;
+    if (!text || !text.trim()) continue;
+    const baseSlug = key.replace(/^[A-D]-/, '');
+    if (seen.has(baseSlug)) continue;
+    seen.add(baseSlug);
+
+    const ex = EX[key] || ALL.find((e) => e.id.endsWith(baseSlug) || e.id === key);
+    const prettyName = ex ? ex.name : (baseSlug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
+    list.push({
+      id: key,
+      baseSlug,
+      name: prettyName,
+      group: ex ? ex.group : 'Generale',
+      scheda: ex ? ex.scheda : (key.match(/^([A-D])-/)?.[1] || ''),
+      kind: ex ? ex.kind : 'machine',
+      text: text.trim(),
+      updatedAt: typeof val === 'object' ? val.updatedAt : null,
+    });
+  }
+  return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
 export function resetAll() {

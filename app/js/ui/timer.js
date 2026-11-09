@@ -18,13 +18,16 @@ let expiredAlert = null; // { scheda, label }
 const R = 100;
 const BEZEL = 2 * Math.PI * 112;
 
-export function startRest(sec, { label = '', scheda } = {}) {
+export function startRest(sec, { label = '', scheda, endAt } = {}) {
   ending = false;
   expiredAlert = null;
   const s = scheda || S().active?.scheda || '';
-  setTimer({ endAt: Date.now() + sec * 1000, dur: sec, label, scheda: s });
+  const finalEndAt = endAt || (Date.now() + sec * 1000);
+  const rem = (finalEndAt - Date.now()) / 1000;
+  if (rem <= 0) return;
+  setTimer({ endAt: finalEndAt, dur: sec, label, scheda: s });
   lastSec = -1;
-  scheduleTimeout(sec * 1000);
+  scheduleTimeout(rem * 1000);
   expand(true);
   loop();
 }
@@ -185,9 +188,23 @@ function adjust(delta) {
   if (full) punch(full.querySelector('[data-time]'), delta > 0 ? 1.08 : 0.94);
 }
 
+export function adjustTimer(delta) {
+  adjust(delta);
+}
+
 function expand(fresh = false) {
   const t = S().timer;
-  if (!t || full) return;
+  if (!t) return;
+  if (full) {
+    full.dataset.s = t.scheda || '';
+    const labelEl = full.querySelector('.rest-label');
+    if (labelEl) labelEl.textContent = esc(t.label);
+    const ofEl = full.querySelector('.rest-of');
+    if (ofEl) ofEl.textContent = `su ${clock(t.dur)}`;
+    full.classList.remove('is-go');
+    full._intro = false;
+    return;
+  }
   hidePill(true);
   const root = document.getElementById('layers');
   full = document.createElement('div');

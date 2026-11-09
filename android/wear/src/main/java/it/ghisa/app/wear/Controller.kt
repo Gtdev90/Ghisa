@@ -34,18 +34,19 @@ object Controller {
         val exDoneAfter = (a?.let { snap.setsDoneOf(it, e) } ?: 0) + 1
         val allDone = doneAfter >= sc.totalSets
         val rest = if (allDone) 0 else restFor(e, snap.settings)
+        val endAt = if (rest > 0) now + rest * 1000L else 0L
         val label = if (exDoneAfter < e.sets) {
             "Prossima: ${e.name} · serie ${exDoneAfter + 1} di ${e.sets}"
         } else {
             val nxt = sc.exercises.firstOrNull { it.n > e.n && (a?.let { ac -> snap.setsDoneOf(ac, it) } ?: 0) < it.sets }
                 ?: sc.exercises.firstOrNull { it.id != e.id && (a?.let { ac -> snap.setsDoneOf(ac, it) } ?: 0) < it.sets }
-            if (nxt != null) "Prossimo: ${nxt.name} · ${nxt.sets}×${nxt.reps}" else "Ultima serie fatta"
+            if (nxt != null) "Prossimo: ${nxt.name} · ${nxt.sets}×${nxt.repLabel ?: nxt.reps}" else "Ultima serie fatta"
         }
 
-        Repo.send(Cmds.set(e.scheda, e.id, i, e.reps, kg, rest, label, startedAt))
+        Repo.send(Cmds.set(e.scheda, e.id, i, e.reps, kg, rest, label, startedAt, endAt))
         Repo.beginLocalSession(startedAt)
         SessionService.start(ctx)
-        if (rest > 0) Repo.startRest(rest, label) else Repo.clearRest()
+        if (rest > 0) Repo.startRest(rest, label, endAt) else Repo.clearRest()
         return true
     }
 
@@ -77,10 +78,21 @@ object Controller {
         val a = snap.active?.takeIf { !it.isWorkout && it.scheda == e.scheda }
         val startedAt = a?.startedAt ?: now
         val rest = snap.settings.restTest
+        val endAt = now + rest * 1000L
         val next = if (ok) kg + e.step else kg
         val label = if (ok) "${e.name} · prossimo tentativo a ${fmtKg(next)} kg" else "${e.name} · riprova o chiudi qui"
-        Repo.send(Cmds.attempt(e.scheda, e.id, kg, ok, rest, label, startedAt))
-        Repo.startRest(rest, label)
+        Repo.send(Cmds.attempt(e.scheda, e.id, kg, ok, rest, label, startedAt, endAt))
+        Repo.startRest(rest, label, endAt)
+    }
+
+    fun adjustRest(deltaSec: Int) {
+        Repo.adjustRest(deltaSec)
+        Repo.send(Cmds.adjustRest(deltaSec))
+    }
+
+    fun skipRest() {
+        Repo.clearRest()
+        Repo.send(Cmds.clearRest())
     }
 
     fun closeTest() {

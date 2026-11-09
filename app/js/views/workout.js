@@ -6,6 +6,7 @@ import {
   S, rmOf, autoLoad, todayLoad, currentTargetLoad, estMinutes, lastSetsOf, startWorkout, finishSession, discardSession,
   doSet, undoSet, setTodayLoad, setOverride, currentSetsCount, totalSetsOf, targetRpe,
   analyzeProgression, oneRmPercent, parseReps,
+  noteOf, saveNote, deleteNote,
 } from '../store.js';
 import { go, back } from '../nav.js';
 import { barbellSVG, weightPicker } from '../ui/gear.js';
@@ -51,10 +52,13 @@ function lastLine(e) {
 
 function setBtn(e, i, rec, isNext) {
   const rpeBadge = rec?.rpe ? `<span class="rpe-tag mono">@${rec.rpe}</span>` : '';
-  const targetNum = rec ? rec.reps : (parseReps(e.reps).max || e.reps);
+  const range = parseReps(e.reps);
+  const isRange = !e.oneRM && range.min !== range.max;
+  const targetNum = rec ? rec.reps : (isRange ? `${range.min}–${range.max}` : (e.reps || range.min));
+  const isRangeNum = !rec && isRange;
   return `
     <button class="set ${rec ? 'done' : ''} ${isNext ? 'next' : ''}" data-act="set" data-i="${i}" style="--f:${rec ? 1 : 0}" aria-label="Serie ${i + 1}${rec ? ` fatta a ${kg(rec.kg)} kg` : ''}">
-      <span class="num">${targetNum}</span>
+      <span class="num ${isRangeNum ? 'num-range' : ''}">${targetNum}</span>
       <span class="mono">${rec ? `${kg(rec.kg)} kg` : `serie ${i + 1}`}</span>
       ${rpeBadge}
     </button>`;
@@ -69,6 +73,7 @@ function body(e, a) {
   const partner = e.jsPartner ? EX[e.jsPartner] : null;
   const prog = analyzeProgression(e);
   const repLabel = formatRepRange(e);
+  const note = noteOf(e.id);
   const coachTag = prog.type === 'unlocked'
     ? 'OVERLOAD'
     : (prog.type === '1rm' ? 'PROGRESSIONE %' : (prog.type === 'caution' ? 'CONSOLIDA' : 'DOPPIA PROG.'));
@@ -88,6 +93,21 @@ function body(e, a) {
           <span class="xc-coach-tag mono">${coachTag}</span>
         </div>
         <div class="xc-coach-note">${esc(prog.note)}</div>
+      </div>
+      <div class="xc-note-box ${note ? 'has-note' : ''}">
+        ${note ? `
+          <div class="xc-note-card">
+            <div class="xc-note-header">
+              <span class="xc-note-tag mono"><svg class="ico"><use href="#i-note"/></svg> NOTA PERSONALE</span>
+              <button class="xc-note-btn mono" data-act="note" aria-label="Modifica nota">
+                <svg class="ico"><use href="#i-edit"/></svg> Modifica
+              </button>
+            </div>
+            <div class="xc-note-body">${esc(note)}</div>
+          </div>` : `
+          <button class="xc-note-empty mono" data-act="note">
+            <svg class="ico"><use href="#i-plus"/></svg> Aggiungi nota personale
+          </button>`}
       </div>
       <div class="xc-load" style="margin-top:10px">
         <div class="xc-sr"><span>${count}</span><i>×</i><span>${repLabel}</span></div>
@@ -117,11 +137,13 @@ function card(e, a) {
   const prog = analyzeProgression(e);
   const unlockBadge = prog?.type === 'unlocked' ? `<span class="xc-badge-unlocked">⚡ +${prog.step}kg</span>` : '';
   const repLabel = formatRepRange(e);
+  const note = noteOf(e.id);
+  const noteBadge = note ? '<span class="xc-note-pill" title="Nota personale"><svg class="ico"><use href="#i-note"/></svg></span>' : '';
   return `
     <article class="xc ${complete ? 'complete' : ''} ${prog?.type === 'unlocked' ? 'is-unlocked' : ''}" data-ex="${e.id}" data-a="rise">
       <button class="xc-head" data-act="toggle" aria-expanded="false">
         <span class="xc-n mono">${complete ? '✓' : pad(e.n)}</span>
-        <span class="xc-name">${esc(e.name)}${unlockBadge}<small>${count}×${repLabel} · ${load != null ? `${kg(load)} kg` : 'carico da definire'}${e.js ? ` · ${e.js}` : ''}</small></span>
+        <span class="xc-name">${esc(e.name)}${unlockBadge}${noteBadge}<small>${count}×${repLabel} · ${load != null ? `${kg(load)} kg` : 'carico da definire'}${e.js ? ` · ${e.js}` : ''}</small></span>
         <span class="xc-dots">${Array.from({ length: count }, (_, i) => `<i class="${sets[i] ? 'on' : ''}"></i>`).join('')}</span>
       </button>
       <div class="xc-body">${body(e, a)}</div>
@@ -288,6 +310,11 @@ export default {
       const btn = $$('.set', c)[i];
       btn.classList.add('done');
       btn.classList.remove('next');
+      const numEl = btn.querySelector('.num');
+      if (numEl) {
+        numEl.textContent = defReps;
+        numEl.classList.remove('num-range');
+      }
       btn.querySelector('.mono').textContent = `${kg(load)} kg`;
       const rpeTag = btn.querySelector('.rpe-tag');
       if (rpeTag) rpeTag.textContent = `@${defRpe}`;
@@ -475,6 +502,48 @@ export default {
       });
     }
 
+    function editNoteSheet(e) {
+      const curNote = noteOf(e.id);
+      sheet({
+        accent: sid,
+        html: `
+          <div class="sheet-head">
+            <span class="mono">${esc(e.name)} · Scheda ${sid}</span>
+            <h2 class="sheet-title">Nota personale</h2>
+          </div>
+          <p class="sheet-text">Appunti su regolazioni macchine, sellino, impugnatura o sensazioni. Rimarranno visibili ogni volta che esegui questo esercizio.</p>
+          <div class="note-input-wrap">
+            <textarea class="note-textarea" rows="4" maxlength="300" placeholder="Es. Foro 4 alla panca, sellino medio, focus su stretch...">${esc(curNote)}</textarea>
+          </div>
+          <div class="btn-row">
+            ${curNote ? '<button class="btn btn-ghost" data-x="del-note">Elimina</button>' : '<button class="btn btn-ghost" data-x="cancel">Annulla</button>'}
+            <button class="btn btn-acc" data-x="save-note">Salva nota</button>
+          </div>`,
+        onMount(panel, closeSheet) {
+          const textarea = panel.querySelector('.note-textarea');
+          setTimeout(() => textarea?.focus(), 250);
+          panel.addEventListener('click', (ev) => {
+            const x = ev.target.closest('[data-x]')?.dataset.x;
+            if (!x) return;
+            if (x === 'cancel') {
+              closeSheet();
+            } else if (x === 'del-note') {
+              deleteNote(e.id);
+              closeSheet();
+              toast('Nota eliminata');
+              rerenderCard(e);
+            } else if (x === 'save-note') {
+              const val = textarea.value;
+              saveNote(e.id, val);
+              closeSheet();
+              toast(val.trim() ? 'Nota salvata' : 'Nota eliminata');
+              rerenderCard(e);
+            }
+          });
+        },
+      });
+    }
+
     async function finish() {
       if (!doneCount()) {
         const yes = await confirm({ title: 'Nessuna serie', text: 'Non hai registrato serie. Annullo l\'allenamento?', ok: 'Annulla allenamento', danger: true, accent: sid });
@@ -513,6 +582,9 @@ export default {
           break;
         case 'load':
           editLoad(EX[c.dataset.ex]);
+          break;
+        case 'note':
+          editNoteSheet(EX[c.dataset.ex]);
           break;
         case 'start':
           ensureStarted();

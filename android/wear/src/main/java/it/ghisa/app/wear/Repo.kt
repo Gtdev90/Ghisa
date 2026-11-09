@@ -116,6 +116,10 @@ object Repo {
         val t = snap.timer
         if (t != null && t.endAt > System.currentTimeMillis() && rest?.endAt != t.endAt) {
             setRest(Rest(t.endAt, t.dur, t.label, fromPhone = true))
+        } else if (t == null && rest != null) {
+            if (rest?.fromPhone == true || pending.none { it.type in setOf("set", "attempt", "rest") }) {
+                clearRest()
+            }
         }
         // Sessione chiusa sul telefono: si spegne anche il polso.
         if (snap.active == null && pending.none { it.type in setOf("start", "set", "attempt") }) {
@@ -150,9 +154,9 @@ object Repo {
     // ---------- Recupero ----------
 
     @Synchronized
-    fun startRest(sec: Int, label: String) {
+    fun startRest(sec: Int, label: String, endAt: Long = System.currentTimeMillis() + sec * 1000L) {
         if (sec <= 0) return
-        setRest(Rest(System.currentTimeMillis() + sec * 1000L, sec, label))
+        setRest(Rest(endAt, sec, label))
         publish()
     }
 

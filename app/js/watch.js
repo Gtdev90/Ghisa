@@ -6,9 +6,10 @@
 //
 // Il formato dell'istantanea e dei comandi è letto da android/wear/.../Model.kt.
 import { Watch, AppPlugin } from './native.js';
-import { S, subscribe, remoteApply, todayLoad, rmOf, nextScheda } from './store.js';
+import { S, subscribe, remoteApply, todayLoad, rmOf, nextScheda, parseReps, noteOf } from './store.js';
 import { SCHEDE, KIND } from './data.js';
 import { refresh, currentPath } from './nav.js';
+import { startRest, stopTimer, adjustTimer } from './ui/timer.js';
 
 export const watchSupported = !!Watch;
 
@@ -40,23 +41,29 @@ export function buildSnapshot() {
     schede: SCHEDE.map((s) => ({
       id: s.id,
       workout: s.workout,
-      exercises: s.exercises.map((e) => ({
-        id: e.id,
-        scheda: e.scheda,
-        name: e.name,
-        group: e.group,
-        sets: e.sets,
-        reps: e.reps,
-        testReps: e.testReps,
-        oneRM: e.oneRM,
-        kind: e.kind,
-        kg: todayLoad(e),
-        rm: rmOf(e.id),
-        step: KIND[e.kind].step,
-        n: e.n,
-        tut: e.tut,
-        js: e.js,
-      })),
+      exercises: s.exercises.map((e) => {
+        const range = parseReps(e.reps);
+        const repLabel = e.oneRM || range.min === range.max ? `${e.reps}` : `${range.min}–${range.max}`;
+        return {
+          id: e.id,
+          scheda: e.scheda,
+          name: e.name,
+          group: e.group,
+          sets: e.sets,
+          reps: range.min,
+          repLabel,
+          note: noteOf(e.id),
+          testReps: e.testReps,
+          oneRM: e.oneRM,
+          kind: e.kind,
+          kg: todayLoad(e),
+          rm: rmOf(e.id),
+          step: KIND[e.kind].step,
+          n: e.n,
+          tut: e.tut,
+          js: e.js,
+        };
+      }),
     })),
   };
 }
@@ -93,6 +100,50 @@ const schedulePush = () => {
 
 let draining = false;
 
+function handleRemoteTimer(c) {
+  switch (c.type) {
+    case 'set':
+    case 'attempt': {
+      if (typeof c.rest === 'number') {
+        if (c.rest > 0) {
+          const endAt = c.endAt || (c.t ? c.t + c.rest * 1000 : Date.now() + c.rest * 1000);
+          if (endAt > Date.now()) {
+            startRest(c.rest, { label: c.label || '', scheda: c.scheda, endAt });
+          } else {
+            stopTimer();
+          }
+        } else {
+          stopTimer();
+        }
+      }
+      break;
+    }
+    case 'clearRest':
+    case 'finish':
+    case 'discard':
+      stopTimer();
+      break;
+    case 'adjustRest':
+      if (typeof c.delta === 'number') {
+        adjustTimer(c.delta);
+      }
+      break;
+    case 'rest': {
+      const dur = c.dur || c.rest || 0;
+      if (dur > 0) {
+        const endAt = c.endAt || (c.t ? c.t + dur * 1000 : Date.now() + dur * 1000);
+        if (endAt > Date.now()) {
+          startRest(dur, { label: c.label || '', scheda: c.scheda, endAt });
+        } else {
+          stopTimer();
+        }
+      }
+      break;
+    }
+    default:
+  }
+}
+
 /** Ritira i comandi dell'orologio e li applica. */
 export async function drain() {
   if (!Watch || draining) return;
@@ -106,6 +157,9 @@ export async function drain() {
       if (remoteApply(c)) applied.push(c);
     }
     if (applied.length) {
+      for (const c of applied) {
+        handleRemoteTimer(c);
+      }
       window.dispatchEvent(new CustomEvent('ghisa:remote', { detail: applied }));
       const path = currentPath();
       if (/^\/(test\/|massimali|diario)?$/.test(path) || path.startsWith('/test/') || path.startsWith('/rm/')) refresh();

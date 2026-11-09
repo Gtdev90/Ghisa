@@ -288,7 +288,10 @@ fun WorkoutScreen(sid: String, ui: UiState, nav: NavHostController) {
                 } else {
                     T("Imposta il carico sul telefono", 12.sp, C.yellow, maxLines = 2)
                 }
-                Mono("${ex.sets}×${ex.reps}  ·  ${ex.n}/${sc.exercises.size}", size = 9.sp)
+                Mono("${ex.sets}×${ex.repLabel ?: ex.reps}  ·  ${ex.n}/${sc.exercises.size}", size = 9.sp)
+                if (ex.note != null) {
+                    Mono("✎ ${ex.note}", color = C.yellow, size = 8.sp)
+                }
             }
 
             // Serie
@@ -347,7 +350,7 @@ fun ListScreen(sid: String, ui: UiState, nav: NavHostController) {
                     ) {
                         Column(Modifier.weight(1f)) {
                             T(e.name, 12.sp, if (done >= e.sets) C.chalk3 else C.chalk, FontWeight.SemiBold, maxLines = 2, align = androidx.compose.ui.text.style.TextAlign.Start)
-                            Mono("${e.sets}×${e.reps}" + (e.kg?.let { " · ${fmtKg(it)} kg" } ?: ""), size = 8.sp, color = C.chalk3)
+                            Mono("${e.sets}×${e.repLabel ?: e.reps}" + (e.kg?.let { " · ${fmtKg(it)} kg" } ?: ""), size = 8.sp, color = C.chalk3)
                         }
                         Spacer(Modifier.width(6.dp))
                         Num("$done/${e.sets}", 15.sp, if (done >= e.sets) accent else C.chalk2)
@@ -460,9 +463,9 @@ fun RestScreen(ui: UiState, nav: NavHostController) {
             Modifier.align(Alignment.BottomCenter).padding(bottom = 38.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
-            MiniBtn("−15") { Repo.adjustRest(-15) }
-            MiniBtn("Salta", wide = true, fill = C.chalk, ink = C.floor) { Repo.clearRest() }
-            MiniBtn("+15") { Repo.adjustRest(15) }
+            MiniBtn("−15") { Controller.adjustRest(-15) }
+            MiniBtn("Salta", wide = true, fill = C.chalk, ink = C.floor) { Controller.skipRest() }
+            MiniBtn("+15") { Controller.adjustRest(15) }
         }
     }
 }
